@@ -1,0 +1,13 @@
+project_id = "rpbkvjopftobeipptzdf"
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.process-payment]
+verify_jwt = true
+
+[functions.create-invoice]
+verify_jwt = true
+
+[functions.process-refund]
+verify_jwt = true
