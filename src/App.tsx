@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
@@ -20,6 +20,7 @@ import ClosuresPage from "./pages/ClosuresPage";
 import Booking from "./pages/Booking";
 import SalonBooking from "./pages/SalonBooking";
 import NotFound from "./pages/NotFound";
+import EmployeeInvite from "./pages/EmployeeInvite";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,10 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter>
+          {/* Use HashRouter instead of BrowserRouter so deep links work
+             when the app is served from static hosting. This avoids 404
+             errors when navigating directly to pages like /salon/:id. */}
+          <HashRouter>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
@@ -46,10 +50,12 @@ const App = () => (
               <Route path="/closures" element={<ClosuresPage />} />
               <Route path="/booking" element={<Booking />} />
               <Route path="/salon/:salonId" element={<SalonBooking />} />
+              {/* Invite page for employees to set their password after accepting an invitation */}
+              <Route path="/employee-invite" element={<EmployeeInvite />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </BrowserRouter>
+          </HashRouter>
         </TooltipProvider>
       </AuthProvider>
     </ThemeProvider>

@@ -154,7 +154,7 @@ export function useAdminData() {
     const result = await supabase.from('employees').insert(employeeData).select().single();
     
     if (!result.error && inviteData?.email) {
-      // Create invitation for the employee
+      // Create an invitation record for the employee
       await supabase.from('employee_invitations').insert({
         salon_id: data.salon_id,
         employee_id: result.data.id,
@@ -162,15 +162,32 @@ export function useAdminData() {
         first_name: inviteData.first_name,
         last_name: inviteData.last_name,
       });
-      
-      // Add profile info to the employee for display
+
+      try {
+        // Trigger the invite-employee edge function to generate an invite link
+        // and dispatch the email. If this fails it is logged but does not
+        // prevent the employee record from being created.
+        await supabase.functions.invoke('invite-employee', {
+          body: {
+            employeeId: result.data.id,
+            salonId: data.salon_id,
+            email: inviteData.email,
+            first_name: inviteData.first_name,
+            last_name: inviteData.last_name,
+          },
+        });
+      } catch (e) {
+        console.error('Failed to send invitation email:', e);
+      }
+
+      // Add profile info to the employee for display with pending status
       const employeeWithPending = {
         ...result.data,
         profile: {
           first_name: inviteData.first_name,
           last_name: inviteData.last_name,
           email: inviteData.email,
-        }
+        },
       };
       setEmployees([employeeWithPending, ...employees]);
     } else if (!result.error) {

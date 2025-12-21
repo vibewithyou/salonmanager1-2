@@ -240,7 +240,10 @@ const AdminDashboard = () => {
   const today = new Date();
   const pendingLeaveRequests = leaveRequests.filter(l => l.status === 'pending');
 
-  const bookingLink = salon ? `${window.location.origin}/salon/${salon.id}` : '';
+  // When using HashRouter we need to include the hash in the link to
+  // ensure deep linking works on static hosts. Otherwise the user will
+  // encounter a 404 when navigating directly to /salon/:id.
+  const bookingLink = salon ? `${window.location.origin}/#/salon/${salon.id}` : '';
 
   const copyBookingLink = async () => {
     if (!bookingLink) return;
