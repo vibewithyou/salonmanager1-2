@@ -164,6 +164,14 @@ export function useAdminData() {
       });
 
       try {
+        // Retrieve the current session to obtain a JWT for the Authorization header.
+        // Supabase automatically attaches the JWT when a session is available, but
+        // explicitly fetching the session ensures that the token is present and
+        // up-to-date. If no session is found, the headers object will be empty,
+        // which will cause the function to fail when verify_jwt = true.
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+
         // Trigger the employee-invite edge function to generate an invite link
         // and dispatch the email. If this fails it is logged but does not
         // prevent the employee record from being created.
@@ -175,6 +183,7 @@ export function useAdminData() {
             first_name: inviteData.first_name,
             last_name: inviteData.last_name,
           },
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
         });
       } catch (e) {
         console.error('Failed to send invitation email:', e);
