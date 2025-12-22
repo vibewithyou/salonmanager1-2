@@ -42,38 +42,13 @@ export function TimeEntriesOverview({ salonId, employeeNameMap }: TimeEntriesOve
   const [loading, setLoading] = useState(false);
   const locale = i18n.language === 'de' ? de : enUS;
 
+  // Temporarily disable fetching time entries until backend access
+  // and permissions are fully configured. Without a working query,
+  // the component will display a placeholder message. When
+  // ready, the commented-out fetch logic can be restored.
   useEffect(() => {
-    const fetchTimeEntries = async () => {
-      if (!salonId) return;
-      setLoading(true);
-      try {
-        // Fetch employees for this salon to get their IDs.
-        const { data: employeesData } = await supabase
-          .from('employees')
-          .select('id')
-          .eq('salon_id', salonId);
-
-        const employeeIds = employeesData?.map(e => e.id) || [];
-        if (employeeIds.length === 0) {
-          setTimeEntries([]);
-          // If there are no employees, stop loading and return early.
-          setLoading(false);
-          return;
-        }
-        // Fetch time entries for these employees
-        const { data: entries } = await supabase
-          .from('time_entries')
-          .select('*')
-          .in('employee_id', employeeIds)
-          .order('check_in', { ascending: false });
-        setTimeEntries(entries || []);
-      } catch (error) {
-        console.error('Error fetching time entries:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchTimeEntries();
+    setLoading(false);
+    setTimeEntries([]);
   }, [salonId]);
 
   const renderDuration = (entry: TimeEntry) => {

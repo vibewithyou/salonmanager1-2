@@ -34,7 +34,8 @@ import {
   Clock,
 } from 'lucide-react';
 import BookingQRCode from '@/components/dashboard/BookingQRCode';
-import { TimeEntriesOverview } from '@/components/dashboard/TimeEntriesOverview';
+// Import a lightweight placeholder component for the time tracking tab.
+import TimeTrackingPlaceholder from '@/components/dashboard/TimeTrackingPlaceholder';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -976,14 +977,16 @@ const AdminDashboard = () => {
             )}
           </TabsContent>
 
-          {/* Time Tracking / Time Entries Tab */}
+          {/* Time Tracking / Zeiterfassung Tab */}
           <TabsContent value="time">
-            {salon && (
-              <TimeEntriesOverview
-                salonId={salon.id}
-                employeeNameMap={employeeNameMap}
-              />
-            )}
+            {/*
+              We use a lightweight placeholder instead of a full data‑fetching
+              component here.  Loading time entries from Supabase requires
+              row‑level security rules and proper API configuration.  Until
+              those are configured, rendering a simple card avoids runtime
+              errors that would otherwise blank out the entire admin page.
+            */}
+            <TimeTrackingPlaceholder />
           </TabsContent>
         </Tabs>
       </main>
