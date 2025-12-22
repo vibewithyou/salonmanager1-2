@@ -31,6 +31,7 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
+import BookingQRCode from '@/components/dashboard/BookingQRCode';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -329,6 +330,8 @@ const AdminDashboard = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">{t('admin.shareBookingLink', 'Buchungslink teilen')}</p>
                     <p className="text-xs text-muted-foreground truncate max-w-[200px]">{bookingLink}</p>
+                    {/* Display a QR code for the booking link so customers can scan it directly. */}
+                    <BookingQRCode value={bookingLink} />
                   </div>
                   <Button size="sm" variant="outline" onClick={copyBookingLink}>
                     {linkCopied ? (
