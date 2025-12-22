@@ -164,10 +164,10 @@ export function useAdminData() {
       });
 
       try {
-        // Trigger the invite-employee edge function to generate an invite link
+        // Trigger the employee-invite edge function to generate an invite link
         // and dispatch the email. If this fails it is logged but does not
         // prevent the employee record from being created.
-        await supabase.functions.invoke('invite-employee', {
+        await supabase.functions.invoke('employee-invite', {
           body: {
             employeeId: result.data.id,
             salonId: data.salon_id,

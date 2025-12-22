@@ -12,5 +12,6 @@ verify_jwt = true
 [functions.process-refund]
 verify_jwt = true
 
-[functions.invite-employee]
+# Rename the invite function to match the actual deployed name.
+[functions.employee-invite]
 verify_jwt = true
