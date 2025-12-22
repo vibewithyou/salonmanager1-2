@@ -56,6 +56,8 @@ export function TimeEntriesOverview({ salonId, employeeNameMap }: TimeEntriesOve
         const employeeIds = employeesData?.map(e => e.id) || [];
         if (employeeIds.length === 0) {
           setTimeEntries([]);
+          // If there are no employees, stop loading and return early.
+          setLoading(false);
           return;
         }
         // Fetch time entries for these employees
@@ -122,7 +124,8 @@ export function TimeEntriesOverview({ salonId, employeeNameMap }: TimeEntriesOve
                       {entry.check_out ? format(new Date(entry.check_out), 'dd.MM.yyyy HH:mm', { locale }) : '--'}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
-                      {(entry.break_minutes || 0) + t('dashboard.minutesAbbrev', 'm')}
+                      {entry.break_minutes || 0}
+                      {t('dashboard.minutesAbbrev', 'm')}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
                       {renderDuration(entry)}
