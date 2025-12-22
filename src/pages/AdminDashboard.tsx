@@ -243,7 +243,26 @@ const AdminDashboard = () => {
   // When using HashRouter we need to include the hash in the link to
   // ensure deep linking works on static hosts. Otherwise the user will
   // encounter a 404 when navigating directly to /salon/:id.
-  const bookingLink = salon ? `${window.location.origin}/#/salon/${salon.id}` : '';
+  //
+  // Use both `origin` and the current pathname when building the link.
+  // On some hosts the app may be served from a subdirectory (for example
+  // `https://example.com/my-app/`). If we omit the pathname when
+  // constructing the booking link, the browser will navigate to the
+  // domain root (e.g. `https://example.com/#/salon/…`), which often
+  // results in a 404 because the static assets are served from
+  // `/my-app/` instead of `/`. Including the pathname ensures the link
+  // points back into the correct subdirectory.
+  //
+  // We also strip a trailing slash from the pathname to avoid double
+  // slashes in the generated URL. See https://vitejs.dev/guide/deploy.html
+  // for more details about base paths.
+  const basePath = (() => {
+    const { origin, pathname } = window.location;
+    // Remove trailing slash from pathname, except when it's just '/'
+    const cleanPath = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
+    return `${origin}${cleanPath}`;
+  })();
+  const bookingLink = salon ? `${basePath}/#/salon/${salon.id}` : '';
 
   const copyBookingLink = async () => {
     if (!bookingLink) return;
