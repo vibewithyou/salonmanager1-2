@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,10 +28,13 @@ import {
   Shield,
   CreditCard,
   Share2,
+  Download,
   Copy,
   Check,
+  Clock,
 } from 'lucide-react';
 import BookingQRCode from '@/components/dashboard/BookingQRCode';
+import { TimeEntriesOverview } from '@/components/dashboard/TimeEntriesOverview';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -265,6 +268,74 @@ const AdminDashboard = () => {
   })();
   const bookingLink = salon ? `${basePath}/#/salon/${salon.id}` : '';
 
+  // Build a lookup map from employee IDs to their display names. We
+  // attempt to use the employee's profile first and last name if
+  // available; otherwise we fall back to the employee's display_name.
+  const employeeNameMap = employees.reduce<Record<string, string>>((map, emp) => {
+    const fullName = emp.profile ? `${emp.profile.first_name || ''} ${emp.profile.last_name || ''}`.trim() : '';
+    map[emp.id] = fullName || emp.display_name || 'Mitarbeiter';
+    return map;
+  }, {});
+
+  // Ref for the QR code container. This allows us to locate the
+  // rendered SVG for downloading as an image.
+  const qrRef = useRef<HTMLDivElement | null>(null);
+
+  /**
+   * Download the generated QR code as an SVG file. We locate the
+   * underlying <svg> element inside the qrRef, serialize it to a
+   * string, create a Blob and then trigger a download. The filename
+   * includes the salon name or ID to make it recognizable for
+   * administrators.
+   */
+  const downloadQRCode = () => {
+    if (!qrRef.current) return;
+    const svg = qrRef.current.querySelector('svg');
+    if (!svg) return;
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const filenameBase = salon?.name?.replace(/\s+/g, '-').toLowerCase() || salon?.id || 'booking';
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filenameBase}-qr-code.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  /**
+   * Share the booking link using the Web Share API if available. On
+   * supported devices (mobile browsers), this will open the native
+   * share sheet. If the API isn't available, we fall back to copying
+   * the link to the clipboard and showing a toast to inform the user.
+   */
+  const shareBookingLink = async () => {
+    if (!bookingLink) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t('admin.shareBookingLink', 'Buchungslink teilen'),
+          url: bookingLink,
+        });
+        toast({ title: t('common.success'), description: t('admin.linkShared', 'Buchungslink wurde geteilt!') });
+      } catch (err) {
+        // user cancelled or there was an error
+        toast({ title: t('common.error'), description: 'Link konnte nicht geteilt werden', variant: 'destructive' });
+      }
+    } else {
+      // fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(bookingLink);
+        toast({ title: t('common.success'), description: t('admin.linkCopied', 'Buchungslink kopiert!') });
+      } catch {
+        toast({ title: t('common.error'), description: 'Link konnte nicht kopiert werden', variant: 'destructive' });
+      }
+    }
+  };
+
   const copyBookingLink = async () => {
     if (!bookingLink) return;
     try {
@@ -331,15 +402,29 @@ const AdminDashboard = () => {
                     <p className="text-sm font-medium text-foreground">{t('admin.shareBookingLink', 'Buchungslink teilen')}</p>
                     <p className="text-xs text-muted-foreground truncate max-w-[200px]">{bookingLink}</p>
                     {/* Display a QR code for the booking link so customers can scan it directly. */}
-                    <BookingQRCode value={bookingLink} />
+                    <BookingQRCode value={bookingLink} svgRef={qrRef} />
                   </div>
-                  <Button size="sm" variant="outline" onClick={copyBookingLink}>
-                    {linkCopied ? (
-                      <Check className="w-4 h-4 text-sage" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </Button>
+                  {/*
+                    Actions: copy, share, download. We group them in a
+                    vertical stack on small screens and horizontal on larger
+                    screens via flex classes. Each button uses an icon
+                    from lucide-react and triggers its respective handler.
+                  */}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button size="sm" variant="outline" onClick={copyBookingLink} aria-label={t('admin.copyLink', 'Link kopieren')}>
+                      {linkCopied ? (
+                        <Check className="w-4 h-4 text-sage" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={shareBookingLink} aria-label={t('admin.shareLink', 'Link teilen')}>
+                      <Share2 className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={downloadQRCode} aria-label={t('admin.downloadQr', 'QR-Code herunterladen')}>
+                      <Download className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -373,6 +458,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="pos" className="gap-2">
               <CreditCard className="w-4 h-4" />
               {t('pos.terminal')}
+            </TabsTrigger>
+            <TabsTrigger value="time" className="gap-2">
+              <Clock className="w-4 h-4" />
+              {t('admin.timeTracking', 'Zeiterfassung')}
             </TabsTrigger>
           </TabsList>
 
@@ -883,6 +972,16 @@ const AdminDashboard = () => {
                   duration_minutes: s.duration_minutes,
                   category: s.category,
                 }))}
+              />
+            )}
+          </TabsContent>
+
+          {/* Time Tracking / Time Entries Tab */}
+          <TabsContent value="time">
+            {salon && (
+              <TimeEntriesOverview
+                salonId={salon.id}
+                employeeNameMap={employeeNameMap}
               />
             )}
           </TabsContent>
