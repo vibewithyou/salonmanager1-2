@@ -33,6 +33,11 @@ import {
   Check,
   Clock,
 } from 'lucide-react';
+// Additional imports for admin profile settings
+import { ProfileSettings } from '@/components/dashboard/ProfileSettings';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+
 import BookingQRCode from '@/components/dashboard/BookingQRCode';
 // Import a lightweight placeholder component for the time tracking tab.
 import TimeTrackingPlaceholder from '@/components/dashboard/TimeTrackingPlaceholder';
@@ -43,6 +48,22 @@ import { useToast } from '@/hooks/use-toast';
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const { user, signOut, loading: authLoading } = useAuth();
+  // Fetch the admin's profile information for the profile settings
+  const { data: profile, refetch: refetchProfile } = useQuery({
+    queryKey: ['admin-profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, phone, avatar_url')
+        .eq('user_id', user.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user,
+  });
+
   const navigate = useNavigate();
   const { toast } = useToast();
   const locale = i18n.language === 'de' ? de : enUS;
@@ -472,6 +493,12 @@ const AdminDashboard = () => {
 
           {/* Overview Tab */}
           <TabsContent value="overview">
+            {user && (
+              <div className="mb-8">
+                <ProfileSettings profile={profile} onUpdate={refetchProfile} />
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <Card className="border-border">
                 <CardContent className="pt-6">
