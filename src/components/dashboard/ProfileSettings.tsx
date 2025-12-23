@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Camera, Loader2, User, Save } from 'lucide-react';
+import { Camera, Loader2, User, Save, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ProfileSettingsProps {
@@ -119,6 +119,61 @@ export const ProfileSettings = ({ profile, onUpdate }: ProfileSettingsProps) => 
     }
   };
 
+  /**
+   * Handle a password change for the currently authenticated user.  Supabase
+   * requires that the user is signed in to update their password.  We ask
+   * the user for their current password (to re‑authenticate) and then for
+   * a new password and its confirmation.  The current password is verified
+   * by attempting a sign‑in with it; if that succeeds we call
+   * `updateUser({ password })` on the Supabase client.  See the docs on
+   * password‑based auth for details【352934996388639†L276-L283】.
+   */
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (newPassword !== confirmPassword) {
+      toast.error(t('auth.passwordsDoNotMatch', { defaultValue: 'Die Passwörter stimmen nicht überein.' }));
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      // Re‑authenticate by signing in with the current password.  If this
+      // fails, Supabase will return an error.
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: currentPassword,
+      });
+      if (signInError) {
+        toast.error(t('auth.invalidCurrentPassword', { defaultValue: 'Aktuelles Passwort ist ungültig.' }));
+        setChangingPassword(false);
+        return;
+      }
+      // Update the password for the current session.  This call requires
+      // a valid session and will sign out other active sessions.  Supabase
+      // automatically refreshes the session after updating the password【352934996388639†L276-L283】.
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) {
+        toast.error(updateError.message);
+        setChangingPassword(false);
+        return;
+      }
+      // Clear input fields and notify the user.
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      toast.success(t('auth.passwordUpdated', { defaultValue: 'Passwort erfolgreich gespeichert.' }));
+    } catch (err: any) {
+      console.error('Change password error:', err);
+      toast.error(t('auth.updatePasswordError', { defaultValue: 'Fehler beim Aktualisieren des Passworts.' }));
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   return (
     <Card className="border-border">
       <CardHeader>
@@ -199,6 +254,55 @@ export const ProfileSettings = ({ profile, onUpdate }: ProfileSettingsProps) => 
             )}
             {t('profile.save')}
           </Button>
+        </div>
+
+        {/* Change Password Form */}
+        <div className="space-y-4 border-t pt-6 mt-6">
+          <h3 className="text-xl font-semibold text-foreground flex items-center gap-2">
+            <Lock className="w-5 h-5 text-primary" />
+            {t('auth.changePasswordTitle', { defaultValue: 'Passwort ändern' })}
+          </h3>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="current_password">{t('auth.currentPassword', { defaultValue: 'Aktuelles Passwort' })}</Label>
+              <Input
+                id="current_password"
+                type="password"
+                placeholder="••••••••"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new_password">{t('auth.newPassword', { defaultValue: 'Neues Passwort' })}</Label>
+              <Input
+                id="new_password"
+                type="password"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm_new_password">{t('auth.confirmPassword', { defaultValue: 'Passwort bestätigen' })}</Label>
+              <Input
+                id="confirm_new_password"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+              />
+            </div>
+            <Button type="submit" disabled={changingPassword} className="w-full">
+              {changingPassword ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              {t('auth.changePassword', { defaultValue: 'Passwort ändern' })}
+            </Button>
+          </form>
         </div>
       </CardContent>
     </Card>

@@ -28,13 +28,30 @@ const EmployeeInvite = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // Track whether we have performed an initial sign‑out.  When this page
+  // loads there may be an existing session (e.g. when an admin clicks
+  // their invite link while logged in).  Updating a password while the
+  // wrong user is logged in would change the wrong account.  To prevent
+  // this, we sign out once on mount so that the magic invite token can
+  // establish a new session.  Without this the user must manually log
+  // out before clicking the invite link【352934996388639†L276-L283】.
+  const [signedOutOnce, setSignedOutOnce] = useState(false);
 
   // On mount fetch the current authenticated user. The invite link created
   // by Supabase automatically signs the user in so there should be a
   // session available. We capture the email to update the corresponding
   // invitation record.
+  // On mount sign out any existing session to ensure the invite link
+  // establishes the correct session.  We only do this once to avoid
+  // infinite loops.  After signing out, Supabase will see the token in
+  // the URL hash and automatically set a new session for the invited
+  // user.  See Supabase docs on invites for more details【352934996388639†L276-L283】.
   useEffect(() => {
-    const getUser = async () => {
+    const prepareSession = async () => {
+      if (!signedOutOnce) {
+        await supabase.auth.signOut();
+        setSignedOutOnce(true);
+      }
       const { data, error } = await supabase.auth.getUser();
       if (error) {
         console.error(error);
@@ -45,8 +62,8 @@ const EmployeeInvite = () => {
       setUserEmail(data.user?.email ?? null);
       setLoading(false);
     };
-    getUser();
-  }, []);
+    prepareSession();
+  }, [signedOutOnce]);
 
   // Handle form submission. Ensures both passwords match, updates the
   // authenticated user's password and marks the invitation as accepted.

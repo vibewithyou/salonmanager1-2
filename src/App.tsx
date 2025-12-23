@@ -21,6 +21,8 @@ import Booking from "./pages/Booking";
 import SalonBooking from "./pages/SalonBooking";
 import NotFound from "./pages/NotFound";
 import EmployeeInvite from "./pages/EmployeeInvite";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,9 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              {/* Forgot/Reset password flows */}
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
               <Route path="/admin" element={<AdminDashboard />} />
