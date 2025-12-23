@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import ProfilePage from "./pages/ProfilePage";
 import SalonSetup from "./pages/SalonSetup";
 import CalendarPage from "./pages/CalendarPage";
 import InventoryPage from "./pages/InventoryPage";
@@ -57,6 +58,8 @@ const App = () => (
               <Route path="/salon/:salonId" element={<SalonBooking />} />
               {/* Invite page for employees to set their password after accepting an invitation */}
               <Route path="/employee-invite" element={<EmployeeInvite />} />
+              {/* Dedicated profile page for all user roles */}
+              <Route path="/profile" element={<ProfilePage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

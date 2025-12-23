@@ -7,7 +7,7 @@ import { TimeTracking } from '@/components/dashboard/TimeTracking';
 import { LeaveRequestForm } from '@/components/dashboard/LeaveRequestForm';
 import { AppointmentsList } from '@/components/dashboard/AppointmentsList';
 import { LeaveRequestsList } from '@/components/dashboard/LeaveRequestsList';
-import { ProfileSettings } from '@/components/dashboard/ProfileSettings';
+// Removed ProfileSettings import; profile editing is now handled on a dedicated page
 import { POSDashboard } from '@/components/pos/POSDashboard';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -104,6 +104,11 @@ const EmployeeDashboard = () => {
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
             <LanguageSwitcher />
+            {/* Profile link in header */}
+            <Link to="/profile" className="flex items-center gap-2 text-sm hover:underline">
+              <User className="w-4 h-4" />
+              {t('nav.profile', 'Profil')}
+            </Link>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4 mr-2" />
               {t('nav.logout')}
@@ -193,7 +198,6 @@ const EmployeeDashboard = () => {
 
               {/* Right Column - Time & Leave */}
               <div className="space-y-6">
-                <ProfileSettings profile={profile} onUpdate={refetch} />
                 <TimeTracking
                   todayTimeEntry={todayTimeEntry}
                   onCheckIn={checkIn}

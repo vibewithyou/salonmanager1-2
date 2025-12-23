@@ -20,6 +20,8 @@ import {
   FileText,
   CalendarDays,
   Shield
+  ,
+  User
 } from "lucide-react";
 import { format } from "date-fns";
 import { de, enUS } from "date-fns/locale";
@@ -118,6 +120,11 @@ const Dashboard = () => {
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
             <LanguageSwitcher />
+            {/* Profile link in header */}
+            <Link to="/profile" className="flex items-center gap-2 text-sm hover:underline">
+              <User className="w-4 h-4" />
+              {t('nav.profile', 'Profil')}
+            </Link>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4 mr-2" />
               {t('nav.logout')}

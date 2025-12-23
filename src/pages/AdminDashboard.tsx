@@ -32,11 +32,9 @@ import {
   Copy,
   Check,
   Clock,
+  User,
 } from 'lucide-react';
-// Additional imports for admin profile settings
-import { ProfileSettings } from '@/components/dashboard/ProfileSettings';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+// Removed ProfileSettings import and unused query hooks
 
 import BookingQRCode from '@/components/dashboard/BookingQRCode';
 // Import a lightweight placeholder component for the time tracking tab.
@@ -48,21 +46,7 @@ import { useToast } from '@/hooks/use-toast';
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const { user, signOut, loading: authLoading } = useAuth();
-  // Fetch the admin's profile information for the profile settings
-  const { data: profile, refetch: refetchProfile } = useQuery({
-    queryKey: ['admin-profile', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, phone, avatar_url')
-        .eq('user_id', user.id)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
+  // We no longer fetch the admin's profile here. Profile editing is handled on the dedicated profile page.
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -395,6 +379,11 @@ const AdminDashboard = () => {
             </span>
             <ThemeSwitcher />
             <LanguageSwitcher />
+            {/* Profile link in header */}
+            <Link to="/profile" className="flex items-center gap-2 text-sm hover:underline">
+              <User className="w-4 h-4" />
+              {t('nav.profile', 'Profil')}
+            </Link>
             <Button variant="ghost" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4 mr-2" />
               {t('nav.logout')}
@@ -493,11 +482,7 @@ const AdminDashboard = () => {
 
           {/* Overview Tab */}
           <TabsContent value="overview">
-            {user && (
-              <div className="mb-8">
-                <ProfileSettings profile={profile} onUpdate={refetchProfile} />
-              </div>
-            )}
+            {/* The profile settings card has been moved to the dedicated profile page */}
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <Card className="border-border">
