@@ -38,7 +38,12 @@
     "tomorrow": "Morgen",
     "yesterday": "Gestern",
     "viewAll": "Alle anzeigen",
-    "showToday": "Nur heute"
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "backToHome": "Zurück zur Startseite",
+    "more": "weitere"
   },
   "nav": {
     "home": "Startseite",
@@ -277,47 +282,14 @@
     "startNow": "Jetzt starten"
   },
   "appointments": {
-    "title": "Termine",
-    "new": "Neuer Termin",
-    "customer": "Kunde",
-    "service": "Dienstleistung",
-    "stylist": "Stylist",
-    "dateTime": "Datum & Uhrzeit",
-    "duration": "Dauer",
-    "status": "Status",
-    "notes": "Notizen",
-    "price": "Preis",
-    "pending": "Ausstehend",
+    "details": "Termindetails",
     "confirmed": "Bestätigt",
-    "arrived": "Eingetroffen",
-    "completed": "Abgeschlossen",
+    "pending": "Ausstehend",
     "cancelled": "Storniert",
-    "noShow": "Nicht erschienen"
+    "completed": "Abgeschlossen"
   },
   "staff": {
-    "title": "Mitarbeiter",
-    "new": "Neuer Mitarbeiter",
-    "name": "Name",
-    "displayName": "Anzeigename",
-    "displayNamePlaceholder": "z.B. Max oder Max M.",
-    "displayNameHint": "Dieser Name wird Kunden bei der Buchung angezeigt",
-    "position": "Position",
-    "positionPlaceholder": "z.B. Senior Stylist",
-    "email": "E-Mail",
-    "phone": "Telefon",
-    "skills": "Fähigkeiten",
-    "weeklyHours": "Wochenstunden",
-    "hourlyRate": "Stundenlohn",
-    "bio": "Biografie",
-    "bioPlaceholder": "Kurze Beschreibung...",
-    "hireDate": "Einstellungsdatum",
-    "status": "Status",
-    "active": "Aktiv",
-    "inactive": "Inaktiv",
-    "online": "Online",
-    "break": "Pause",
-    "offline": "Offline",
-    "noPosition": "Keine Position"
+    "owner": "Inhaber"
   },
   "services": {
     "title": "Dienstleistungen",
@@ -329,7 +301,9 @@
     "price": "Preis",
     "category": "Kategorie",
     "categoryPlaceholder": "z.B. Haare",
-    "minutes": "Minuten"
+    "minutes": "Minuten",
+    "bufferBefore": "Puffer vor",
+    "bufferAfter": "Puffer nach"
   },
   "settings": {
     "title": "Einstellungen",
@@ -379,38 +353,6 @@
     "shareBookingLink": "Buchungslink teilen",
     "linkCopied": "Buchungslink kopiert!"
   },
-  "common": {
-    "save": "Speichern",
-    "cancel": "Abbrechen",
-    "delete": "Löschen",
-    "edit": "Bearbeiten",
-    "create": "Erstellen",
-    "search": "Suchen...",
-    "loading": "Laden...",
-    "error": "Fehler",
-    "success": "Erfolgreich",
-    "back": "Zurück",
-    "next": "Weiter",
-    "submit": "Absenden",
-    "close": "Schließen",
-    "confirm": "Bestätigen",
-    "yes": "Ja",
-    "no": "Nein",
-    "or": "oder",
-    "and": "und",
-    "all": "Alle",
-    "none": "Keine",
-    "today": "Heute",
-    "tomorrow": "Morgen",
-    "yesterday": "Gestern",
-    "viewAll": "Alle anzeigen",
-    "active": "Aktiv",
-    "inactive": "Inaktiv",
-    "approve": "Genehmigen",
-    "reject": "Ablehnen",
-    "backToHome": "Zurück zur Startseite",
-    "more": "weitere"
-  },
   "calendar": {
     "approve": "Bestätigen",
     "reject": "Ablehnen",
@@ -421,13 +363,6 @@
     "appointmentApproved": "Termin bestätigt",
     "appointmentRejected": "Termin abgelehnt",
     "newTimeSuggested": "Neue Zeit vorgeschlagen"
-  },
-  "appointments": {
-    "details": "Termindetails",
-    "confirmed": "Bestätigt",
-    "pending": "Ausstehend",
-    "cancelled": "Storniert",
-    "completed": "Abgeschlossen"
   },
   "inventory": {
     "addItem": "Artikel hinzufügen",
@@ -517,9 +452,6 @@
     "closed": "Geschlossen",
     "createSalon": "Salon erstellen",
     "success": "Salon erfolgreich erstellt!"
-  },
-  "staff": {
-    "owner": "Inhaber"
   },
   "booking": {
     "salon": "Salon",

@@ -97,6 +97,9 @@ const AdminDashboard = () => {
     price: '',
     duration_minutes: '30',
     category: '',
+    // Buffer times in minutes. Defaults to 0 when creating a new service.
+    buffer_before: '',
+    buffer_after: '',
   });
 
   // Reference to the QR code container. Declaring this hook along with the
@@ -196,6 +199,13 @@ const AdminDashboard = () => {
       price: parseFloat(serviceForm.price) || 0,
       duration_minutes: parseInt(serviceForm.duration_minutes) || 30,
       category: serviceForm.category || null,
+      // Convert buffer fields to integers; default to 0 if empty
+      buffer_before: serviceForm.buffer_before
+        ? parseInt(serviceForm.buffer_before)
+        : 0,
+      buffer_after: serviceForm.buffer_after
+        ? parseInt(serviceForm.buffer_after)
+        : 0,
     });
 
     if (result.error) {
@@ -203,7 +213,15 @@ const AdminDashboard = () => {
     } else {
       toast({ title: t('common.success'), description: t('admin.serviceCreated') });
       setIsServiceDialogOpen(false);
-      setServiceForm({ name: '', description: '', price: '', duration_minutes: '30', category: '' });
+      setServiceForm({
+        name: '',
+        description: '',
+        price: '',
+        duration_minutes: '30',
+        category: '',
+        buffer_before: '',
+        buffer_after: '',
+      });
     }
   };
 
@@ -215,6 +233,12 @@ const AdminDashboard = () => {
       price: parseFloat(serviceForm.price) || 0,
       duration_minutes: parseInt(serviceForm.duration_minutes) || 30,
       category: serviceForm.category || null,
+      buffer_before: serviceForm.buffer_before
+        ? parseInt(serviceForm.buffer_before)
+        : 0,
+      buffer_after: serviceForm.buffer_after
+        ? parseInt(serviceForm.buffer_after)
+        : 0,
     });
 
     if (result.error) {
@@ -222,7 +246,15 @@ const AdminDashboard = () => {
     } else {
       toast({ title: t('common.success'), description: t('admin.serviceUpdated') });
       setEditingService(null);
-      setServiceForm({ name: '', description: '', price: '', duration_minutes: '30', category: '' });
+      setServiceForm({
+        name: '',
+        description: '',
+        price: '',
+        duration_minutes: '30',
+        category: '',
+        buffer_before: '',
+        buffer_after: '',
+      });
     }
   };
 
@@ -838,6 +870,29 @@ const AdminDashboard = () => {
                         />
                       </div>
                     </div>
+                    {/* Buffer times for services */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>{t('services.bufferBefore', 'Puffer vor (Min)')}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={serviceForm.buffer_before}
+                          onChange={(e) => setServiceForm({ ...serviceForm, buffer_before: e.target.value })}
+                          placeholder="0"
+                        />
+                      </div>
+                        <div>
+                          <Label>{t('services.bufferAfter', 'Puffer nach (Min)')}</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={serviceForm.buffer_after}
+                            onChange={(e) => setServiceForm({ ...serviceForm, buffer_after: e.target.value })}
+                            placeholder="0"
+                          />
+                        </div>
+                    </div>
                     <div>
                       <Label>{t('services.category')}</Label>
                       <Input
@@ -888,6 +943,8 @@ const AdminDashboard = () => {
                                 price: service.price.toString(),
                                 duration_minutes: service.duration_minutes.toString(),
                                 category: service.category || '',
+                                buffer_before: service.buffer_before?.toString() ?? '',
+                                buffer_after: service.buffer_after?.toString() ?? '',
                               });
                             }}
                           >
@@ -944,6 +1001,29 @@ const AdminDashboard = () => {
                         type="number"
                         value={serviceForm.duration_minutes}
                         onChange={(e) => setServiceForm({ ...serviceForm, duration_minutes: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  {/* Buffer times for services */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>{t('services.bufferBefore', 'Puffer vor (Min)')}</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={serviceForm.buffer_before}
+                        onChange={(e) => setServiceForm({ ...serviceForm, buffer_before: e.target.value })}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label>{t('services.bufferAfter', 'Puffer nach (Min)')}</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={serviceForm.buffer_after}
+                        onChange={(e) => setServiceForm({ ...serviceForm, buffer_after: e.target.value })}
+                        placeholder="0"
                       />
                     </div>
                   </div>

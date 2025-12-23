@@ -85,6 +85,13 @@ const Booking = () => {
 
   const selectedSalonData = salons.find((s: any) => s.id === selectedSalon);
   const selectedServiceData = services.find((s: any) => s.id === selectedService);
+
+  // Compute total duration including buffer times. If buffer fields are undefined, default to 0.
+  const selectedServiceTotalDuration = selectedServiceData
+    ? (selectedServiceData.duration_minutes || 0) +
+      (selectedServiceData.buffer_before || 0) +
+      (selectedServiceData.buffer_after || 0)
+    : 0;
   const selectedEmployeeData = employees.find((e: any) => e.id === selectedStylist);
 
   // Get stylist display name
@@ -119,7 +126,7 @@ const Booking = () => {
     setIsSubmitting(true);
 
     const startTime = new Date(`${format(data.date, 'yyyy-MM-dd')}T${data.time}:00`);
-    const endTime = new Date(startTime.getTime() + selectedServiceData.duration_minutes * 60000);
+    const endTime = new Date(startTime.getTime() + selectedServiceTotalDuration * 60000);
 
     const { error } = await supabase.from('appointments').insert({
       salon_id: selectedSalon,
@@ -132,8 +139,12 @@ const Booking = () => {
       image_url: data.imageUrl,
       start_time: startTime.toISOString(),
       end_time: endTime.toISOString(),
+      // include price from the selected service
       price: selectedServiceData.price,
       status: 'pending',
+      // store buffer values on the appointment record to allow auditing
+      buffer_before: selectedServiceData.buffer_before || 0,
+      buffer_after: selectedServiceData.buffer_after || 0,
     });
 
     setIsSubmitting(false);
@@ -382,7 +393,7 @@ const Booking = () => {
               <WeekCalendar
                 salonId={selectedSalon}
                 selectedStylistId={selectedStylist}
-                serviceDuration={selectedServiceData.duration_minutes}
+                serviceDuration={selectedServiceTotalDuration}
                 onSelectSlot={handleSlotSelect}
               />
             </div>
@@ -423,7 +434,7 @@ const Booking = () => {
         onClose={() => setShowDetailModal(false)}
         selectedDate={selectedDate}
         selectedTime={selectedTime}
-        serviceDuration={selectedServiceData?.duration_minutes || 30}
+        serviceDuration={selectedServiceTotalDuration}
         service={selectedServiceData ? {
           id: selectedServiceData.id,
           name: selectedServiceData.name,
