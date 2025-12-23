@@ -31,8 +31,11 @@ import {
   Download,
   Copy,
   Check,
+  Clock,
 } from 'lucide-react';
 import BookingQRCode from '@/components/dashboard/BookingQRCode';
+// Import a lightweight placeholder component for the time tracking tab.
+import TimeTrackingPlaceholder from '@/components/dashboard/TimeTrackingPlaceholder';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -90,6 +93,12 @@ const AdminDashboard = () => {
     duration_minutes: '30',
     category: '',
   });
+
+  // Reference to the QR code container. Declaring this hook along with the
+  // other hooks ensures React calls hooks in the same order on every render.
+  // If this is declared after an early return, React would see a different
+  // number of hooks on subsequent renders (causing error #310).
+  const qrRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -266,9 +275,16 @@ const AdminDashboard = () => {
   })();
   const bookingLink = salon ? `${basePath}/#/salon/${salon.id}` : '';
 
-  // Ref for the QR code container. This allows us to locate the
-  // rendered SVG for downloading as an image.
-  const qrRef = useRef<HTMLDivElement | null>(null);
+  // Build a lookup map from employee IDs to their display names. We
+  // attempt to use the employee's profile first and last name if
+  // available; otherwise we fall back to the employee's display_name.
+  const employeeNameMap = employees.reduce<Record<string, string>>((map, emp) => {
+    const fullName = emp.profile ? `${emp.profile.first_name || ''} ${emp.profile.last_name || ''}`.trim() : '';
+    map[emp.id] = fullName || emp.display_name || 'Mitarbeiter';
+    return map;
+  }, {});
+
+  // qrRef is declared earlier with the other hooks.
 
   /**
    * Download the generated QR code as an SVG file. We locate the
@@ -447,6 +463,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="pos" className="gap-2">
               <CreditCard className="w-4 h-4" />
               {t('pos.terminal')}
+            </TabsTrigger>
+            <TabsTrigger value="time" className="gap-2">
+              <Clock className="w-4 h-4" />
+              {t('admin.timeTracking', 'Zeiterfassung')}
             </TabsTrigger>
           </TabsList>
 
@@ -959,6 +979,18 @@ const AdminDashboard = () => {
                 }))}
               />
             )}
+          </TabsContent>
+
+          {/* Time Tracking / Zeiterfassung Tab */}
+          <TabsContent value="time">
+            {/*
+              We use a lightweight placeholder instead of a full data‑fetching
+              component here.  Loading time entries from Supabase requires
+              row‑level security rules and proper API configuration.  Until
+              those are configured, rendering a simple card avoids runtime
+              errors that would otherwise blank out the entire admin page.
+            */}
+            <TimeTrackingPlaceholder />
           </TabsContent>
         </Tabs>
       </main>
