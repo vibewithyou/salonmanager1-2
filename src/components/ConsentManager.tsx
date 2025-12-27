@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/hooks/useProfile';
@@ -17,25 +17,51 @@ const ConsentManager = () => {
   const { profile, loading, updateProfile } = useProfile();
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  // Use the current route to avoid showing the consent banner on the landing page
+  const location = useLocation();
+  const pathname = location.pathname || '/';
 
   useEffect(() => {
     if (!loading && profile) {
       // If any of the consents are falsy (null or false), prompt the user.
       const needsConsent = !profile.cookie_consent || !profile.privacy_consent || !profile.terms_consent;
       setOpen(needsConsent);
+    } else if (!loading && !profile) {
+      // For guests (no profile), check localStorage to see if they have previously accepted.
+      const guestAccepted = typeof window !== 'undefined' && localStorage.getItem('guest_consent') === 'true';
+      setOpen(!guestAccepted);
     }
   }, [profile, loading]);
 
   if (loading || !open) return null;
 
+  // Do not show the consent banner on the root path (landing page).  Users can browse
+  // the marketing/start page without consenting. Consent is required only once
+  // they navigate to booking or account pages.
+  // Do not show the consent banner on public or authentication pages.  Users can browse
+  // the marketing/start page and sign in/up pages without consenting.  Consent is
+  // required only once they navigate to booking or account pages.
+  const exemptPaths = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/employee-invite', '/profile'];
+  if (exemptPaths.includes(pathname)) {
+    return null;
+  }
+
   const acceptAll = async () => {
     try {
-      await updateProfile({
-        cookie_consent: true,
-        privacy_consent: true,
-        terms_consent: true,
-      });
-      setOpen(false);
+      if (profile) {
+        await updateProfile({
+          cookie_consent: true,
+          privacy_consent: true,
+          terms_consent: true,
+        });
+        setOpen(false);
+      } else {
+        // For guest users without a profile, remember the consent in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('guest_consent', 'true');
+        }
+        setOpen(false);
+      }
     } catch (err) {
       console.error('Error updating consents:', err);
     }

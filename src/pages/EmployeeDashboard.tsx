@@ -6,7 +6,6 @@ import { useEmployeeData } from '@/hooks/useEmployeeData';
 import { TimeTracking } from '@/components/dashboard/TimeTracking';
 import { LeaveRequestForm } from '@/components/dashboard/LeaveRequestForm';
 import { AppointmentsList } from '@/components/dashboard/AppointmentsList';
-import ArchivedAppointmentsList from '@/components/dashboard/ArchivedAppointmentsList';
 import { LeaveRequestsList } from '@/components/dashboard/LeaveRequestsList';
 // Removed ProfileSettings import; profile editing is now handled on a dedicated page
 import { POSDashboard } from '@/components/pos/POSDashboard';
@@ -17,6 +16,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CustomersTab from '@/components/customers/CustomersTab';
 import { Scissors, LogOut, User, Calendar, BarChart3, CreditCard, LayoutDashboard } from 'lucide-react';
+import PastAppointmentsTab from '@/components/dashboard/PastAppointmentsTab';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,7 +151,12 @@ const EmployeeDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="customers" className="gap-2">
               <User className="w-4 h-4" />
-              {t('nav.customers', 'Customers')}
+              {t('nav.customers', 'Kunden')}
+            </TabsTrigger>
+            {/* Past appointments tab */}
+            <TabsTrigger value="past" className="gap-2">
+              <Calendar className="w-4 h-4" />
+              {t('dashboard.pastAppointments', 'Vergangene Termine')}
             </TabsTrigger>
           </TabsList>
 
@@ -229,10 +234,7 @@ const EmployeeDashboard = () => {
               </div>
             </div>
 
-            {/* Archived appointments section */}
-            <div className="mt-6">
-              <ArchivedAppointmentsList appointments={archivedAppointments} />
-            </div>
+            {/* Archived appointments moved to the separate tab */}
           </TabsContent>
 
           {/* POS Tab */}
@@ -254,6 +256,16 @@ const EmployeeDashboard = () => {
           {/* Customers Tab */}
           <TabsContent value="customers">
             <CustomersTab salonId={employee?.salon_id || null} />
+          </TabsContent>
+
+          {/* Past appointments tab */}
+          <TabsContent value="past">
+            <PastAppointmentsTab
+              appointments={archivedAppointments.map((a) => ({
+                ...a,
+                status: a.status || 'pending',
+              }))}
+            />
           </TabsContent>
         </Tabs>
       </main>

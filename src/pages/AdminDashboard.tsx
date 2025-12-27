@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminData } from '@/hooks/useAdminData';
 import { AppointmentsList } from '@/components/dashboard/AppointmentsList';
-import ArchivedAppointmentsList from '@/components/dashboard/ArchivedAppointmentsList';
 import { LeaveRequestsList } from '@/components/dashboard/LeaveRequestsList';
 import { POSDashboard } from '@/components/pos/POSDashboard';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -41,6 +40,7 @@ import {
 import BookingQRCode from '@/components/dashboard/BookingQRCode';
 // Import a lightweight placeholder component for the time tracking tab.
 import TimeTrackingPlaceholder from '@/components/dashboard/TimeTrackingPlaceholder';
+import PastAppointmentsTab from '@/components/dashboard/PastAppointmentsTab';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -517,6 +517,11 @@ const AdminDashboard = () => {
               <Clock className="w-4 h-4" />
               {t('admin.timeTracking', 'Zeiterfassung')}
             </TabsTrigger>
+            {/* New tab for past appointments */}
+            <TabsTrigger value="past" className="gap-2">
+              <Calendar className="w-4 h-4" />
+              {t('dashboard.pastAppointments', 'Vergangene Termine')}
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -603,16 +608,18 @@ const AdminDashboard = () => {
               />
             </div>
 
-          {/* Archived appointments section */}
-          <div className="mt-6">
-            <ArchivedAppointmentsList
-              appointments={archivedAppointments.map(a => ({
+            {/* Archived appointments are now displayed in their own tab */}
+          </TabsContent>
+          {/* Past Appointments Tab */}
+          <TabsContent value="past">
+            <PastAppointmentsTab
+              appointments={archivedAppointments.map((a) => ({
                 ...a,
                 status: a.status || 'pending',
               }))}
             />
-          </div>
           </TabsContent>
+
           {/* Customers Tab */}
           <TabsContent value="customers">
             {/* Pass the current salon ID so the customers hook knows which records to fetch */}

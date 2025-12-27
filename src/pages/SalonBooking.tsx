@@ -124,6 +124,47 @@ const SalonBooking = () => {
     const startTime = new Date(`${format(data.date, 'yyyy-MM-dd')}T${data.time}:00`);
     const endTime = new Date(startTime.getTime() + selectedServiceData.duration_minutes * 60000);
 
+    // Generate appointment number: prefix from salon and owner + running sequence per salon
+    let prefix = 'ap';
+    try {
+      const { data: salonData } = await supabase
+        .from('salons')
+        .select('name, owner_id')
+        .eq('id', salonId)
+        .single();
+      if (salonData) {
+        const salonName: string = (salonData as any).name || '';
+        let ownerFirst = '';
+        if ((salonData as any).owner_id) {
+          const { data: ownerProfile } = await supabase
+            .from('profiles')
+            .select('first_name')
+            .eq('user_id', (salonData as any).owner_id)
+            .maybeSingle();
+          ownerFirst = ownerProfile?.first_name || '';
+        }
+        const salonInitial = salonName.trim()[0] || '';
+        const ownerInitial = ownerFirst.trim()[0] || '';
+        if (salonInitial) {
+          prefix = salonInitial.toLowerCase() + (ownerInitial ? ownerInitial.toLowerCase() : '');
+        }
+      }
+    } catch (e) {
+      console.error('Error computing appointment prefix:', e);
+    }
+    // Compute next sequence
+    let seq = 1;
+    try {
+      const { count } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('salon_id', salonId);
+      seq = ((count ?? 0) + 1);
+    } catch (e) {
+      console.error('Error computing appointment sequence:', e);
+    }
+    const appointmentNumber = `${prefix}${String(seq).padStart(10, '0')}`;
+
     const { error } = await supabase.from('appointments').insert({
       salon_id: salonId,
       service_id: selectedService,
@@ -137,6 +178,7 @@ const SalonBooking = () => {
       end_time: endTime.toISOString(),
       price: selectedServiceData.price,
       status: 'pending',
+      appointment_number: appointmentNumber,
     });
 
     setIsSubmitting(false);

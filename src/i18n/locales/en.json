@@ -75,6 +75,10 @@
     "birthdate": "Birthdate",
     "phone": "Phone",
     "email": "Email",
+    "street": "Street",
+    "houseNumber": "House number",
+    "postalCode": "Postal code",
+    "city": "City",
     "address": "Address",
     "notes": "Notes",
     "images": "Images",
@@ -89,6 +93,7 @@
     "saveCustomer": "Save Customer",
     "updateCustomer": "Update Customer",
     "createCustomer": "Create Customer"
+    ,"customerNumber": "Customer number"
   },
   "auth": {
     "login": "Login",
@@ -258,6 +263,8 @@
     "noArchivedAppointments": "No past appointments",
     "anonymousCustomer": "Customer",
     "noService": "No Service"
+    ,
+    "pastAppointments": "Past Appointments"
   },
   "appointments": {
     "details": "Appointment Details",
@@ -272,6 +279,12 @@
     "image": "Image",
     "bufferBefore": "Buffer before",
     "bufferAfter": "Buffer after"
+    ,"appointmentNumber": "Appointment number"
+  },
+  "pastAppointments": {
+    "title": "Past Appointments",
+    "searchPlaceholder": "Search by name, service or date",
+    "noResults": "No appointments found"
   },
   "staff": {
     "owner": "Owner"

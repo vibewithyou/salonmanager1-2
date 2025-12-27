@@ -75,6 +75,10 @@
     "birthdate": "Geburtsdatum",
     "phone": "Telefon",
     "email": "E-Mail",
+    "street": "Straße",
+    "houseNumber": "Hausnummer",
+    "postalCode": "PLZ",
+    "city": "Ort",
     "address": "Adresse",
     "notes": "Notizen",
     "images": "Bilder",
@@ -89,6 +93,7 @@
     "saveCustomer": "Kunde speichern",
     "updateCustomer": "Kunde aktualisieren",
     "createCustomer": "Kunde anlegen"
+    ,"customerNumber": "Kundennummer"
   },
   "auth": {
     "login": "Anmelden",
@@ -328,7 +333,13 @@
     "noStylistNotes": "Keine Stylist-Notizen vorhanden",
     "image": "Bild",
     "bufferBefore": "Puffer vor",
-    "bufferAfter": "Puffer nach"
+    "bufferAfter": "Puffer nach",
+    "appointmentNumber": "Terminnummer"
+  },
+  "pastAppointments": {
+    "title": "Vergangene Termine",
+    "searchPlaceholder": "Suche nach Name, Service oder Datum",
+    "noResults": "Keine Termine gefunden"
   },
   "staff": {
     "owner": "Inhaber"

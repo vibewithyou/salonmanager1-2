@@ -26,6 +26,10 @@ interface Appointment {
   buffer_after?: number | null;
   image_url?: string | null;
   /**
+   * Human-readable appointment number unique per salon. Optional for legacy records.
+   */
+  appointment_number?: string | null;
+  /**
    * Optional reference to a customer profile. When present, additional
    * information like the customer's birthday can be fetched for display
    * in the appointment detail modal.

@@ -36,6 +36,11 @@ interface AppointmentInfo {
    * contextual details in the modal.
    */
   customer_profile_id?: string | null;
+
+  /**
+   * Human-readable appointment number unique per salon. Used for searching and invoices.
+   */
+  appointment_number?: string | null;
 }
 
 interface AppointmentInfoModalProps {
@@ -161,6 +166,14 @@ export function AppointmentInfoModal({ appointment, open, onClose }: Appointment
             </div>
           </div>
 
+          {/* Appointment number */}
+          {appointment.appointment_number && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <p className="text-sm text-muted-foreground">{t('appointments.appointmentNumber', 'Terminnummer')}</p>
+              <p className="font-medium text-foreground">{appointment.appointment_number}</p>
+            </div>
+          )}
+
           {/* Customer Details */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -208,12 +221,12 @@ export function AppointmentInfoModal({ appointment, open, onClose }: Appointment
             </div>
           )}
 
-          {/* Customer Notes */}
+          {/* Customer notes provided during booking */}
           {appointment.notes && (
             <div className="p-3 rounded-lg bg-muted/50">
               <div className="flex items-center gap-2 mb-2">
                 <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{t('booking.notes')}</span>
+                <span className="text-sm font-medium">{t('appointments.customerNotes')}</span>
               </div>
               <p className="text-sm text-muted-foreground whitespace-pre-line">
                 {appointment.notes}
@@ -221,14 +234,14 @@ export function AppointmentInfoModal({ appointment, open, onClose }: Appointment
             </div>
           )}
 
-          {/* Stylist/Admin Notes Placeholder */}
+          {/* Stylist/Admin notes placeholder */}
           <div className="p-3 rounded-lg bg-muted/50">
             <div className="flex items-center gap-2 mb-2">
               <MessageSquare className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium">{t('appointments.stylistNotes') || 'Stylist notes'}</span>
+              <span className="text-sm font-medium">{t('appointments.stylistNotes')}</span>
             </div>
             <p className="text-sm text-muted-foreground italic">
-              {t('appointments.noStylistNotes', { defaultValue: 'No stylist notes yet' })}
+              {t('appointments.noStylistNotes')}
             </p>
           </div>
         </div>

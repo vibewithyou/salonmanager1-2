@@ -19,6 +19,7 @@ import {
   MapPin as MapPinIcon,
   MessageSquare,
 } from 'lucide-react';
+import AppointmentInfoModal from '@/components/dashboard/AppointmentInfoModal';
 import { format, parseISO } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 
@@ -76,10 +77,20 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ salonId }) => {
     if (!term) return customers;
     return customers.filter((c) => {
       const fullName = `${c.first_name} ${c.last_name}`.toLowerCase();
+      const phone = (c.phone ?? '').toLowerCase();
+      const email = (c.email ?? '').toLowerCase();
+      const customerNumber = (c.customer_number ?? '').toLowerCase();
+      // Structured address fields
+      const addressString = [c.street, c.house_number, c.postal_code, c.city]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
       return (
         fullName.includes(term) ||
-        (c.phone ?? '').toLowerCase().includes(term) ||
-        (c.email ?? '').toLowerCase().includes(term)
+        phone.includes(term) ||
+        email.includes(term) ||
+        customerNumber.includes(term) ||
+        addressString.includes(term)
       );
     });
   }, [customers, search]);
@@ -280,7 +291,11 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
   const [birthdate, setBirthdate] = useState(initialCustomer?.birthdate ?? '');
   const [phone, setPhone] = useState(initialCustomer?.phone ?? '');
   const [email, setEmail] = useState(initialCustomer?.email ?? '');
-  const [address, setAddress] = useState(initialCustomer?.address ?? '');
+  // Structured address fields. Use separate state variables for street, house number, postal code and city.
+  const [street, setStreet] = useState(initialCustomer?.street ?? '');
+  const [houseNumber, setHouseNumber] = useState(initialCustomer?.house_number ?? '');
+  const [postalCode, setPostalCode] = useState(initialCustomer?.postal_code ?? '');
+  const [city, setCity] = useState(initialCustomer?.city ?? '');
   const [notes, setNotes] = useState(initialCustomer?.notes ?? '');
   const [imageUrls, setImageUrls] = useState<string[]>(initialCustomer?.image_urls ?? []);
   const [uploading, setUploading] = useState(false);
@@ -315,7 +330,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
       birthdate: birthdate || null,
       phone: phone || null,
       email: email || null,
-      address: address || null,
+      // Use structured address fields instead of the deprecated single address field
+      street: street || null,
+      house_number: houseNumber || null,
+      postal_code: postalCode || null,
+      city: city || null,
+      // Keep the legacy address field null by default. This may be used for backwards compatibility.
+      address: null,
       image_urls: imageUrls.length > 0 ? imageUrls : null,
       notes: notes || null,
     } as Omit<CustomerProfile, 'id' | 'created_at' | 'updated_at'>;
@@ -381,10 +402,28 @@ const CustomerForm: React.FC<CustomerFormProps> = ({
               <Input id="email" type="email" value={email || ''} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="address">
-                {t('customersPage.address')}
+              <label className="block text-sm font-medium mb-1" htmlFor="street">
+                {t('customersPage.street', 'Straße')}
               </label>
-              <Input id="address" value={address || ''} onChange={(e) => setAddress(e.target.value)} />
+              <Input id="street" value={street || ''} onChange={(e) => setStreet(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="house-number">
+                {t('customersPage.houseNumber', 'Hausnummer')}
+              </label>
+              <Input id="house-number" value={houseNumber || ''} onChange={(e) => setHouseNumber(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="postal-code">
+                {t('customersPage.postalCode', 'PLZ')}
+              </label>
+              <Input id="postal-code" value={postalCode || ''} onChange={(e) => setPostalCode(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1" htmlFor="city">
+                {t('customersPage.city', 'Ort')}
+              </label>
+              <Input id="city" value={city || ''} onChange={(e) => setCity(e.target.value)} />
             </div>
           </div>
           <div>
@@ -445,6 +484,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
   const today = new Date();
   const isBirthdayToday = birthday && birthday.getDate() === today.getDate() && birthday.getMonth() === today.getMonth();
   const isBirthdayMonth = birthday && birthday.getMonth() === today.getMonth() && birthday.getDate() !== today.getDate();
+
+  // Local state to manage the selected appointment for detailed view
+  const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-lg overflow-y-auto max-h-[90vh]">
@@ -487,7 +529,17 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
             <div className="flex items-center gap-2">
               <MapPinIcon className="w-4 h-4 text-muted-foreground" />
               <span className="font-medium">{t('customersPage.address')}:</span>
-              <span className="text-muted-foreground">{customer.address || '-'}</span>
+              <span className="text-muted-foreground">
+                {customer.street || customer.house_number || customer.postal_code || customer.city
+                  ? [customer.street, customer.house_number, customer.postal_code, customer.city]
+                      .filter(Boolean)
+                      .join(' ')
+                  : customer.address || '-'}</span>
+            </div>
+            {/* Customer number */}
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{t('customersPage.customerNumber', 'Kundennummer')}:</span>
+              <span className="text-muted-foreground">{customer.customer_number ?? '-'}</span>
             </div>
           </div>
           {/* Images */}
@@ -527,7 +579,8 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
                 {appointments.map((apt) => (
                   <div
                     key={apt.id}
-                    className="p-3 rounded-lg bg-muted/50"
+                    className="p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted"
+                    onClick={() => setSelectedAppointment(apt)}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -557,6 +610,12 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
               </div>
             )}
           </div>
+        {/* Appointment details modal for selected appointment */}
+        <AppointmentInfoModal
+          appointment={selectedAppointment ? { ...selectedAppointment, customer_profile_id: customer.id } : null}
+          open={!!selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+        />
         </div>
       </DialogContent>
     </Dialog>
