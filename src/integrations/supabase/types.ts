@@ -1054,6 +1054,50 @@ export type Database = {
           },
         ]
       }
+      /**
+       * Extra charge reasons define optional add‑ons that can increase the
+       * base price of a service. Each reason belongs to a specific salon and
+       * has a default amount that will be suggested when completing an
+       * appointment. Salon admins can manage these reasons via the settings
+       * interface. The `default_amount` should be specified in the same
+       * currency as service prices (e.g. EUR). When adjusting a price at
+       * appointment completion, stylists may override this amount.
+       */
+      extra_charge_reasons: {
+        Row: {
+          id: string
+          salon_id: string
+          name: string
+          default_amount: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          salon_id: string
+          name: string
+          default_amount?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          salon_id?: string
+          name?: string
+          default_amount?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "extra_charge_reasons_salon_id_fkey",
+            columns: ["salon_id"],
+            isOneToOne: false,
+            referencedRelation: "salons",
+            referencedColumns: ["id"],
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

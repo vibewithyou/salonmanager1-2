@@ -305,6 +305,185 @@ export function useAdminData() {
     return data as Appointment;
   };
 
+  /**
+   * Mark an appointment as completed. This will update the appointment's
+   * status to 'completed', adjust its price, create a transaction with
+   * line items reflecting the base service and any selected extra
+   * charges, and invoke the invoice generation edge function. The
+   * generated invoice will be stored in the `invoices` table and
+   * associated with the transaction. The updated appointment is
+   * returned. Throws on error.
+   *
+   * @param id ID of the appointment to complete
+   * @param finalPrice Final price (excluding tax) after extras and manual adjustments
+   * @param extras List of extra charge selections with id and amount
+   */
+  const completeAppointment = async (
+    id: string,
+    finalPrice: number,
+    extras: { id: string; amount: number }[],
+  ) => {
+    // Fetch appointment record to get salon, employee and customer info
+    const { data: appointmentData, error: aptError } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (aptError || !appointmentData) {
+      throw aptError || new Error('Appointment not found');
+    }
+    const appointment = appointmentData as Appointment;
+    // Compute tax and totals. Use default 19% VAT.
+    const taxRate = 19;
+    const subtotal = finalPrice;
+    const taxAmount = +(subtotal * taxRate / 100).toFixed(2);
+    const totalAmount = +(subtotal + taxAmount).toFixed(2);
+    // Create transaction
+    const { data: transactionData, error: transactionError } = await supabase
+      .from('transactions')
+      .insert({
+        salon_id: appointment.salon_id,
+        appointment_id: appointment.id,
+        customer_id: appointment.customer_id,
+        employee_id: appointment.employee_id,
+        subtotal,
+        tax_amount: taxAmount,
+        tax_rate: taxRate,
+        discount_amount: 0,
+        tip_amount: 0,
+        total_amount: totalAmount,
+        payment_method: 'cash',
+        payment_status: 'completed',
+        guest_name: appointment.guest_name,
+        guest_email: appointment.guest_email,
+        guest_phone: appointment.guest_phone,
+        notes: appointment.notes,
+      })
+      .select()
+      .single();
+    if (transactionError || !transactionData) {
+      throw transactionError || new Error('Failed to create transaction');
+    }
+    const transaction = transactionData;
+    // Prepare transaction items list
+    const items: any[] = [];
+    // Fetch service for name and price
+    let serviceData: any = null;
+    if (appointment.service_id) {
+      const { data: svc, error: svcError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('id', appointment.service_id)
+        .single();
+      if (svcError) {
+        console.error('Failed to fetch service for transaction item', svcError);
+      } else {
+        serviceData = svc;
+      }
+    }
+    if (serviceData) {
+      items.push({
+        transaction_id: transaction.id,
+        item_type: 'service',
+        service_id: appointment.service_id,
+        inventory_id: null,
+        name: serviceData.name,
+        description: serviceData.description,
+        quantity: 1,
+        unit_price: serviceData.price,
+        total_price: serviceData.price,
+      });
+    }
+    // Fetch extra charge reason details if extras provided
+    let reasons: any[] | null = null;
+    if (extras && extras.length > 0) {
+      const ids = extras.map((e) => e.id);
+      const { data: reasonData, error: reasonError } = await supabase
+        .from('extra_charge_reasons')
+        .select('*')
+        .in('id', ids);
+      if (reasonError) {
+        console.error('Failed to fetch extra charge reasons', reasonError);
+      } else {
+        reasons = reasonData || [];
+      }
+      extras.forEach((ex) => {
+        const reason = reasons?.find((r) => r.id === ex.id);
+        items.push({
+          transaction_id: transaction.id,
+          item_type: 'product',
+          service_id: null,
+          inventory_id: null,
+          name: reason?.name || 'Extra',
+          description: null,
+          quantity: 1,
+          unit_price: ex.amount,
+          total_price: ex.amount,
+        });
+      });
+    }
+    // If there is a manual adjustment beyond the original price and extras,
+    // add it as a separate item. We compute this based on the difference
+    // between finalPrice and the sum of base service price and selected extras.
+    let basePrice = appointment.price || serviceData?.price || 0;
+    const extrasTotal = extras.reduce((sum, e) => sum + e.amount, 0);
+    const manual = +(finalPrice - basePrice - extrasTotal).toFixed(2);
+    if (Math.abs(manual) > 0.009) {
+      items.push({
+        transaction_id: transaction.id,
+        item_type: 'product',
+        service_id: null,
+        inventory_id: null,
+        name: 'Manual Adjustment',
+        description: null,
+        quantity: 1,
+        unit_price: manual,
+        total_price: manual,
+      });
+    }
+    // Insert transaction items
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase
+        .from('transaction_items')
+        .insert(items);
+      if (itemsError) {
+        console.error('Failed to insert transaction items', itemsError);
+      }
+    }
+    // Update appointment status and price
+    const { data: updatedAppointmentData, error: updateError } = await supabase
+      .from('appointments')
+      .update({
+        status: 'completed',
+        price: finalPrice,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', appointment.id)
+      .select()
+      .single();
+    if (updateError) {
+      throw updateError;
+    }
+    const updatedAppointment = updatedAppointmentData as Appointment;
+    // Invoke invoice creation function
+    try {
+      await supabase.functions.invoke('create-invoice', {
+        body: {
+          transactionId: transaction.id,
+          invoiceType: 'invoice',
+          salonId: appointment.salon_id,
+        },
+      });
+    } catch (fnErr: any) {
+      console.error('Failed to invoke create-invoice function', fnErr);
+    }
+    // Update local state lists
+    setUpcomingAppointments((prev) => prev.map((a) => (a.id === appointment.id ? updatedAppointment : a)));
+    setWeekAppointments((prev) => prev.map((a) => (a.id === appointment.id ? updatedAppointment : a)));
+    setArchivedAppointments((prev) => prev.map((a) => (a.id === appointment.id ? updatedAppointment : a)));
+    return updatedAppointment;
+  };
+
   return {
     isAdmin,
     salon,
@@ -328,6 +507,7 @@ export function useAdminData() {
     deleteService,
     updateLeaveRequest,
     updateAppointment,
+    completeAppointment,
     refetch: checkAdminAndFetchData,
   };
 }

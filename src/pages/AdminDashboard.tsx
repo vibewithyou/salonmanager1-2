@@ -75,6 +75,7 @@ const AdminDashboard = () => {
     updateLeaveRequest,
     refetch,
     updateAppointment,
+    completeAppointment,
   } = useAdminData();
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -610,6 +611,9 @@ const AdminDashboard = () => {
                 employees={employees.map(emp => ({ id: emp.id, display_name: employeeNameMap[emp.id] }))}
                 /* Pass the update handler to persist changes */
                 onUpdate={updateAppointment}
+                /* Allow admins to complete appointments (generate invoice) */
+                canComplete
+                onComplete={completeAppointment}
               />
               <LeaveRequestsList
                 leaveRequests={pendingLeaveRequests.map(l => ({

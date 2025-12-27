@@ -48,6 +48,7 @@ const EmployeeDashboard = () => {
     submitLeaveRequest,
     refetch,
     updateAppointment,
+    completeAppointment,
   } = useEmployeeData();
 
   // Fetch services for POS
@@ -223,7 +224,10 @@ const EmployeeDashboard = () => {
                   canReschedule
                   /* Stylists cannot reassign appointments to other stylists */
                   canReassign={false}
-                  onUpdate={updateAppointment}
+                onUpdate={updateAppointment}
+                /* Stylists can mark appointments as completed and generate invoices */
+                canComplete
+                onComplete={completeAppointment}
                 />
               </div>
 

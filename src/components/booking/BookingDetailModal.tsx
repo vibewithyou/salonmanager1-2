@@ -300,7 +300,7 @@ export function BookingDetailModal({
                 <p className="text-sm text-muted-foreground">{t('booking.service')}</p>
                 <p className="font-semibold text-foreground">{service.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {service.duration_minutes} Min • €{service.price.toFixed(2)}
+                  {service.duration_minutes} Min • €{service.price.toFixed(2)}*
                 </p>
               </div>
             </div>

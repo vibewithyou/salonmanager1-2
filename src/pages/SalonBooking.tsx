@@ -354,7 +354,7 @@ const SalonBooking = () => {
                             {service.category}
                           </span>
                         )}
-                        <span className="text-lg font-bold text-primary">€{service.price}</span>
+                        <span className="text-lg font-bold text-primary">€{service.price.toFixed(2)}*</span>
                       </div>
                       <h3 className="font-semibold text-lg text-foreground mb-1">{service.name}</h3>
                       {service.description && (
@@ -367,6 +367,12 @@ const SalonBooking = () => {
                     </button>
                   ))}
                 </div>
+              )}
+              {/* Price disclaimer note */}
+              {services.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  * {t('booking.priceDisclaimer', 'Prices may vary depending on products and effort.')}
+                </p>
               )}
             </div>
           )}

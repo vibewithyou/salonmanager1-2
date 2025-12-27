@@ -283,7 +283,12 @@
     "reschedule": "Reschedule",
     "newDate": "New date",
     "newTime": "New time",
-    "newStylist": "New stylist"
+    "newStylist": "New stylist",
+    "complete": "Complete appointment",
+    "completeConfirm": "Finish",
+    "manualAdjustment": "Manual adjustment",
+    "finalPrice": "Total price",
+    "noExtraReasons": "No extra reasons defined"
   },
   "pastAppointments": {
     "title": "Past Appointments",
@@ -300,6 +305,16 @@
     "noSalon": "No salon found",
     "updateSuccess": "Salon settings updated successfully",
     "website": "Website"
+    ,
+    "extraChargeReasonsTitle": "Extra charge reasons",
+    "extraChargeReasonsDesc": "Define optional reasons for additional charges that can be applied when completing an appointment.",
+    "reasonName": "Reason",
+    "reasonNamePlaceholder": "e.g. Extra color",
+    "defaultAmount": "Amount (€)",
+    "addReason": "Add",
+    "noReasons": "No extra charge reasons yet",
+    "reasonUpdated": "Reason updated",
+    "reasonDeleted": "Reason deleted"
   },
   "staff": {
     "owner": "Owner"
@@ -523,6 +538,7 @@
     "timeConflict": "Time conflict with existing appointment ({{start}} - {{end}})"
     ,"disabledTitle": "Booking unavailable"
     ,"disabledMessage": "This salon currently does not accept online bookings. Please contact the salon directly to make an appointment."
+    ,"priceDisclaimer": "Prices may vary depending on products and effort."
   },
   "pos": {
     "terminal": "POS",

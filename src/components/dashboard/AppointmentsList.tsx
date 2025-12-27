@@ -35,6 +35,13 @@ interface Appointment {
    * in the appointment detail modal.
    */
   customer_profile_id?: string | null;
+
+  /**
+   * ID of the salon to which this appointment belongs. This is needed
+   * when applying extra charges or generating invoices and ensures that
+   * salon‑specific settings are respected.
+   */
+  salon_id: string;
 }
 
 interface AppointmentsListProps {
@@ -69,6 +76,20 @@ interface AppointmentsListProps {
    * rescheduling is enabled.
    */
   onUpdate?: (id: string, updates: any) => Promise<any>;
+
+  /**
+   * Whether the current user can mark appointments as completed. When
+   * true, a completion option will appear in the appointment detail
+   * modal. Defaults to false.
+   */
+  canComplete?: boolean;
+  /**
+   * Handler fired when an appointment is marked as completed. It
+   * receives the appointment id, the final price and a list of
+   * applied extra charges (with id and amount) and should return a
+   * promise. Required when `canComplete` is true.
+   */
+  onComplete?: (id: string, finalPrice: number, extras: { id: string; amount: number }[]) => Promise<any>;
 }
 
 export function AppointmentsList({ 
@@ -81,6 +102,8 @@ export function AppointmentsList({
   canReassign = false,
   employees = [],
   onUpdate,
+  canComplete = false,
+  onComplete,
 }: AppointmentsListProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
@@ -193,6 +216,8 @@ export function AppointmentsList({
         canReassign={canReassign}
         employees={employees}
         onUpdate={onUpdate}
+        canComplete={canComplete}
+        onComplete={onComplete}
       />
     </Card>
   );

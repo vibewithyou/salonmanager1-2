@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useSalonSettings } from '@/hooks/useSalonSettings';
+import { useExtraChargeReasons } from '@/hooks/useExtraChargeReasons';
 import { toast } from 'sonner';
 
 /**
@@ -18,6 +19,16 @@ import { toast } from 'sonner';
 export default function SalonSettingsTab() {
   const { t } = useTranslation();
   const { salon, loading, error, updateSalon } = useSalonSettings();
+
+  // Load extra charge reasons for this salon. We pass undefined when salon is not yet loaded to avoid fetching.
+  const {
+    reasons,
+    loading: reasonsLoading,
+    error: reasonsError,
+    createReason,
+    updateReason,
+    deleteReason,
+  } = useExtraChargeReasons(salon?.id);
 
   // Local form state mirrors salon fields. We initialise state once
   // when the salon data becomes available.
@@ -46,6 +57,20 @@ export default function SalonSettingsTab() {
     }
   }, [salon]);
 
+  // Local state for managing extra charge reasons editing
+  const [newReasonName, setNewReasonName] = useState('');
+  const [newReasonAmount, setNewReasonAmount] = useState('');
+  const [editReasonValues, setEditReasonValues] = useState<{ [id: string]: { name: string; amount: string } }>({});
+
+  // Initialise editReasonValues whenever reasons change
+  useEffect(() => {
+    const initial: { [id: string]: { name: string; amount: string } } = {};
+    reasons?.forEach((r) => {
+      initial[r.id] = { name: r.name || '', amount: r.default_amount?.toString() ?? '' };
+    });
+    setEditReasonValues(initial);
+  }, [reasons]);
+
   const handleSubmit = async () => {
     if (!salon) return;
     try {
@@ -63,6 +88,45 @@ export default function SalonSettingsTab() {
       toast.success(t('salonSettings.updateSuccess', 'Salon settings updated successfully'));
     } catch (err: any) {
       console.error('Failed to update salon settings', err);
+      toast.error(err.message || t('common.error'));
+    }
+  };
+
+  // Handlers for extra charge reasons
+  const handleAddReason = async () => {
+    if (!newReasonName.trim()) return;
+    const amount = parseFloat(newReasonAmount);
+    const defaultAmount = isNaN(amount) ? 0 : amount;
+    try {
+      await createReason(newReasonName.trim(), defaultAmount);
+      setNewReasonName('');
+      setNewReasonAmount('');
+    } catch (err: any) {
+      console.error('Failed to create extra charge reason', err);
+      toast.error(err.message || t('common.error'));
+    }
+  };
+
+  const handleSaveReason = async (id: string) => {
+    const vals = editReasonValues[id];
+    if (!vals) return;
+    const amount = parseFloat(vals.amount);
+    const defaultAmount = isNaN(amount) ? 0 : amount;
+    try {
+      await updateReason(id, { name: vals.name.trim(), default_amount: defaultAmount });
+      toast.success(t('salonSettings.reasonUpdated', 'Reason updated'));
+    } catch (err: any) {
+      console.error('Failed to update reason', err);
+      toast.error(err.message || t('common.error'));
+    }
+  };
+
+  const handleDeleteReason = async (id: string) => {
+    try {
+      await deleteReason(id);
+      toast.success(t('salonSettings.reasonDeleted', 'Reason deleted'));
+    } catch (err: any) {
+      console.error('Failed to delete reason', err);
       toast.error(err.message || t('common.error'));
     }
   };
@@ -150,6 +214,79 @@ export default function SalonSettingsTab() {
           <p className="text-sm text-muted-foreground">
             {t('salonSettings.bookingExplanation', 'If disabled, customers cannot book appointments themselves. Staff can still create appointments internally.')}
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Extra charge reasons management */}
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle>{t('salonSettings.extraChargeReasonsTitle', 'Extra charge reasons')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {t('salonSettings.extraChargeReasonsDesc', 'Define optional reasons for additional charges that can be applied when completing an appointment.')}
+          </p>
+          {/* Add new reason */}
+          <div className="grid grid-cols-12 gap-2 items-end">
+            <div className="col-span-5">
+              <Label htmlFor="newReasonName">{t('salonSettings.reasonName', 'Reason')}</Label>
+              <Input
+                id="newReasonName"
+                value={newReasonName}
+                onChange={(e) => setNewReasonName(e.target.value)}
+                placeholder={t('salonSettings.reasonNamePlaceholder', 'e.g. Extra color')}
+              />
+            </div>
+            <div className="col-span-3">
+              <Label htmlFor="newReasonAmount">{t('salonSettings.defaultAmount', 'Amount (€)')}</Label>
+              <Input
+                id="newReasonAmount"
+                type="number"
+                step="0.01"
+                value={newReasonAmount}
+                onChange={(e) => setNewReasonAmount(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="col-span-2">
+              <Button onClick={handleAddReason}>{t('salonSettings.addReason', 'Add')}</Button>
+            </div>
+          </div>
+          {/* Existing reasons */}
+          {reasonsLoading ? (
+            <p>{t('common.loading', 'Loading...')}</p>
+          ) : reasonsError ? (
+            <p className="text-red-500">{reasonsError}</p>
+          ) : reasons && reasons.length > 0 ? (
+            <div className="space-y-3">
+              {reasons.map((r) => (
+                <div key={r.id} className="grid grid-cols-12 gap-2 items-end">
+                  <div className="col-span-5">
+                    <Input
+                      value={editReasonValues[r.id]?.name ?? ''}
+                      onChange={(e) => setEditReasonValues((prev) => ({ ...prev, [r.id]: { ...prev[r.id], name: e.target.value } }))}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editReasonValues[r.id]?.amount ?? ''}
+                      onChange={(e) => setEditReasonValues((prev) => ({ ...prev, [r.id]: { ...prev[r.id], amount: e.target.value } }))}
+                    />
+                  </div>
+                    <div className="col-span-2 flex gap-2">
+                      <Button size="sm" onClick={() => handleSaveReason(r.id)}>{t('common.save', 'Save')}</Button>
+                      <Button size="sm" variant="destructive" onClick={() => handleDeleteReason(r.id)}>
+                        {t('common.delete', 'Delete')}
+                      </Button>
+                    </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t('salonSettings.noReasons', 'No extra charge reasons yet')}</p>
+          )}
         </CardContent>
       </Card>
       <Button onClick={handleSubmit}>{t('common.save', 'Save')}</Button>

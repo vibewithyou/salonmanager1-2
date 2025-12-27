@@ -338,7 +338,12 @@
     "reschedule": "Termin verschieben",
     "newDate": "Neues Datum",
     "newTime": "Neue Zeit",
-    "newStylist": "Neuer Stylist"
+    "newStylist": "Neuer Stylist",
+    "complete": "Termin abschließen",
+    "completeConfirm": "Abschließen",
+    "manualAdjustment": "Manuelle Anpassung",
+    "finalPrice": "Gesamtpreis",
+    "noExtraReasons": "Keine Zusatzgründe definiert"
   },
   "pastAppointments": {
     "title": "Vergangene Termine",
@@ -355,6 +360,16 @@
     "noSalon": "Kein Salon gefunden",
     "updateSuccess": "Saloneinstellungen wurden erfolgreich aktualisiert",
     "website": "Webseite"
+    ,
+    "extraChargeReasonsTitle": "Zusatzgründe",
+    "extraChargeReasonsDesc": "Definiere optionale Gründe für zusätzliche Kosten, die beim Abschließen eines Termins angewendet werden können.",
+    "reasonName": "Grund",
+    "reasonNamePlaceholder": "z. B. Extra Farbe",
+    "defaultAmount": "Betrag (€)",
+    "addReason": "Hinzufügen",
+    "noReasons": "Keine Zusatzgründe vorhanden",
+    "reasonUpdated": "Grund aktualisiert",
+    "reasonDeleted": "Grund gelöscht"
   },
   "staff": {
     "owner": "Inhaber"
@@ -578,6 +593,7 @@
     "timeConflict": "Zeitkonflikt mit einem bestehenden Termin ({{start}} - {{end}})"
     ,"disabledTitle": "Terminbuchung nicht verfügbar"
     ,"disabledMessage": "Dieser Salon nimmt derzeit keine Online-Buchungen entgegen. Bitte kontaktieren Sie den Salon direkt, um einen Termin zu vereinbaren."
+    ,"priceDisclaimer": "Die Preise können je nach verwendeten Produkten und Aufwand variieren."
   },
   "pos": {
     "terminal": "Kasse",

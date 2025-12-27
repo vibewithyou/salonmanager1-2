@@ -12,6 +12,7 @@ import { Calendar, Clock, User, Scissors, Image as ImageIcon, MessageSquare } fr
 import { format, parseISO } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
+import { useExtraChargeReasons } from '@/hooks/useExtraChargeReasons';
 
 interface AppointmentInfo {
   id: string;
@@ -42,6 +43,12 @@ interface AppointmentInfo {
    * Human-readable appointment number unique per salon. Used for searching and invoices.
    */
   appointment_number?: string | null;
+
+  /**
+   * ID of the salon this appointment belongs to. Required for fetching
+   * salon‑specific settings like extra charge reasons.
+   */
+  salon_id: string;
 }
 
 interface AppointmentInfoModalProps {
@@ -56,13 +63,28 @@ interface AppointmentInfoModalProps {
   employees?: { id: string; display_name: string }[];
   /** Callback to update the appointment. Required when rescheduling is enabled. */
   onUpdate?: (id: string, updates: Partial<AppointmentInfo>) => Promise<any>;
+
+  /**
+   * Whether the current user can mark the appointment as completed. When true,
+   * the modal will show controls to apply extra charges and generate an invoice.
+   */
+  canComplete?: boolean;
+  /**
+   * Callback fired when an appointment is completed. It receives the
+   * appointment id, the final price (after extras and manual adjustments) and
+   * a list of applied extras with their respective amounts.
+   */
+  onComplete?: (id: string, finalPrice: number, extras: { id: string; amount: number }[]) => Promise<any>;
 }
 
 /**
  * Displays detailed information about an appointment. This modal is used
  * throughout the dashboard views when clicking on an appointment entry.
  */
-export function AppointmentInfoModal({ appointment, open, onClose, canReschedule = false, canReassign = false, employees = [], onUpdate }: AppointmentInfoModalProps) {
+export function AppointmentInfoModal({ appointment, open, onClose, canReschedule = false, canReassign = false, employees = [], onUpdate,
+  canComplete = false,
+  onComplete,
+}: AppointmentInfoModalProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
 
@@ -75,6 +97,27 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
   const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
   const [editEmployee, setEditEmployee] = useState('');
+
+  // Completion state. When true, the UI will show controls to apply
+  // extra charges and finalise the appointment.
+  const [completing, setCompleting] = useState(false);
+  // Store the selection state and amounts for extra charge reasons
+  const [selectedExtras, setSelectedExtras] = useState<{ [id: string]: { selected: boolean; amount: number } }>({});
+  // Manual price adjustment applied in addition to extras (may be negative)
+  const [manualAdjustment, setManualAdjustment] = useState<number>(0);
+
+  // Fetch extra charge reasons for the current appointment's salon. If
+  // appointment is undefined, no reasons will be loaded.
+  const { reasons } = useExtraChargeReasons(appointment?.salon_id);
+
+  // Initialise extra charge selections whenever the reasons list changes.
+  useEffect(() => {
+    const initial: { [id: string]: { selected: boolean; amount: number } } = {};
+    (reasons || []).forEach((r) => {
+      initial[r.id] = { selected: false, amount: r.default_amount ?? 0 };
+    });
+    setSelectedExtras(initial);
+  }, [reasons]);
 
   useEffect(() => {
     async function fetchBirthdate() {
@@ -338,6 +381,135 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
                       {t('common.save', 'Speichern')}
                     </Button>
                     <Button variant="secondary" onClick={() => setEditing(false)}>
+                      {t('common.cancel', 'Abbrechen')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {/* Complete appointment controls */}
+          {canComplete && !editing && (
+            <div className="mt-4">
+              {!completing ? (
+                <Button onClick={() => setCompleting(true)}>
+                  {t('appointments.complete', 'Termin abschließen')}
+                </Button>
+              ) : (
+                <div className="space-y-3 p-3 rounded-lg bg-muted/50">
+                  {/* List of extra charges */}
+                  {reasons && reasons.length > 0 ? (
+                    reasons.map((reason) => (
+                      <div key={reason.id} className="flex items-center gap-2">
+                        <input
+                          id={`extra-${reason.id}`}
+                          type="checkbox"
+                          className="h-4 w-4 border border-input rounded"
+                          checked={selectedExtras[reason.id]?.selected || false}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setSelectedExtras((prev) => ({
+                              ...prev,
+                              [reason.id]: {
+                                selected: checked,
+                                amount: prev[reason.id]?.amount ?? reason.default_amount ?? 0,
+                              },
+                            }));
+                          }}
+                        />
+                        <label htmlFor={`extra-${reason.id}`} className="flex-1 text-sm">
+                          {reason.name}
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="w-24 border border-input rounded px-2 py-1 text-sm"
+                          value={selectedExtras[reason.id]?.amount ?? reason.default_amount ?? 0}
+                          disabled={!selectedExtras[reason.id]?.selected}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            setSelectedExtras((prev) => ({
+                              ...prev,
+                              [reason.id]: {
+                                selected: prev[reason.id]?.selected ?? true,
+                                amount: isNaN(value) ? 0 : value,
+                              },
+                            }));
+                          }}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {t('appointments.noExtraReasons', 'Keine Zusatzgründe definiert')}
+                    </p>
+                  )}
+                  {/* Manual adjustment */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium" htmlFor="manualAdjustment">
+                      {t('appointments.manualAdjustment', 'Manueller Aufschlag')}
+                    </label>
+                    <input
+                      id="manualAdjustment"
+                      type="number"
+                      step="0.01"
+                      className="w-24 border border-input rounded px-2 py-1 text-sm"
+                      value={manualAdjustment}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setManualAdjustment(isNaN(val) ? 0 : val);
+                      }}
+                    />
+                  </div>
+                  {/* Final price summary */}
+                  <div className="font-medium">
+                    {t('appointments.finalPrice', 'Gesamtpreis')}: €
+                    {(() => {
+                      const base = price || 0;
+                      let extraTotal = 0;
+                      Object.entries(selectedExtras).forEach(([id, sel]) => {
+                        if (sel.selected) extraTotal += sel.amount;
+                      });
+                      const total = base + extraTotal + (manualAdjustment || 0);
+                      return total.toFixed(2);
+                    })()}
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={async () => {
+                        if (!appointment || !onComplete) return;
+                        // Compute final price and extras list
+                        let extraList: { id: string; amount: number }[] = [];
+                        Object.entries(selectedExtras).forEach(([id, sel]) => {
+                          if (sel.selected) {
+                            extraList.push({ id, amount: sel.amount });
+                          }
+                        });
+                        const base = price || 0;
+                        let extraTotal = 0;
+                        extraList.forEach((item) => {
+                          extraTotal += item.amount;
+                        });
+                        const finalPrice = base + extraTotal + (manualAdjustment || 0);
+                        try {
+                          await onComplete(appointment.id, finalPrice, extraList);
+                          setCompleting(false);
+                          setManualAdjustment(0);
+                          onClose();
+                        } catch (err) {
+                          console.error('Failed to complete appointment', err);
+                        }
+                      }}
+                    >
+                      {t('appointments.completeConfirm', 'Abschließen')}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setCompleting(false);
+                        setManualAdjustment(0);
+                      }}
+                    >
                       {t('common.cancel', 'Abbrechen')}
                     </Button>
                   </div>

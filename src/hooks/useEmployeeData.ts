@@ -239,6 +239,172 @@ export function useEmployeeData() {
     return data as Appointment;
   };
 
+  /**
+   * Mark an appointment as completed. Similar to the admin version but
+   * employees cannot reassign the appointment. It creates a transaction,
+   * inserts line items for the base service and selected extras, updates
+   * the appointment status and price, and invokes invoice creation.
+   *
+   * @param id ID of the appointment to complete
+   * @param finalPrice Final price (excluding tax) after extras and manual adjustments
+   * @param extras List of extra charge selections with id and amount
+   */
+  const completeAppointment = async (
+    id: string,
+    finalPrice: number,
+    extras: { id: string; amount: number }[],
+  ) => {
+    // Fetch appointment
+    const { data: appointmentData, error: aptError } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (aptError || !appointmentData) {
+      throw aptError || new Error('Appointment not found');
+    }
+    const appointment = appointmentData as Appointment as any;
+    // Compute tax (19%)
+    const taxRate = 19;
+    const subtotal = finalPrice;
+    const taxAmount = +(subtotal * taxRate / 100).toFixed(2);
+    const totalAmount = +(subtotal + taxAmount).toFixed(2);
+    // Create transaction
+    const { data: transactionData, error: transactionError } = await supabase
+      .from('transactions')
+      .insert({
+        salon_id: appointment.salon_id,
+        appointment_id: appointment.id,
+        customer_id: appointment.customer_id,
+        employee_id: appointment.employee_id,
+        subtotal,
+        tax_amount: taxAmount,
+        tax_rate: taxRate,
+        discount_amount: 0,
+        tip_amount: 0,
+        total_amount: totalAmount,
+        payment_method: 'cash',
+        payment_status: 'completed',
+        guest_name: appointment.guest_name,
+        guest_email: appointment.guest_email,
+        guest_phone: appointment.guest_phone,
+        notes: appointment.notes,
+      })
+      .select()
+      .single();
+    if (transactionError || !transactionData) {
+      throw transactionError || new Error('Failed to create transaction');
+    }
+    const transaction = transactionData;
+    // Prepare items list
+    const items: any[] = [];
+    // Fetch service info
+    let serviceData: any = null;
+    if (appointment.service_id) {
+      const { data: svc, error: svcError } = await supabase
+        .from('services')
+        .select('*')
+        .eq('id', appointment.service_id)
+        .single();
+      if (!svcError) serviceData = svc;
+    }
+    if (serviceData) {
+      items.push({
+        transaction_id: transaction.id,
+        item_type: 'service',
+        service_id: appointment.service_id,
+        inventory_id: null,
+        name: serviceData.name,
+        description: serviceData.description,
+        quantity: 1,
+        unit_price: serviceData.price,
+        total_price: serviceData.price,
+      });
+    }
+    // Fetch reasons details
+    let reasons: any[] | null = null;
+    if (extras && extras.length > 0) {
+      const ids = extras.map((e) => e.id);
+      const { data: reasonData, error: reasonError } = await supabase
+        .from('extra_charge_reasons')
+        .select('*')
+        .in('id', ids);
+      if (!reasonError) {
+        reasons = reasonData || [];
+      }
+      extras.forEach((ex) => {
+        const reason = reasons?.find((r) => r.id === ex.id);
+        items.push({
+          transaction_id: transaction.id,
+          item_type: 'product',
+          service_id: null,
+          inventory_id: null,
+          name: reason?.name || 'Extra',
+          description: null,
+          quantity: 1,
+          unit_price: ex.amount,
+          total_price: ex.amount,
+        });
+      });
+    }
+    // Manual adjustment item
+    let basePrice = appointment.price || serviceData?.price || 0;
+    const extrasTotal = extras.reduce((sum, e) => sum + e.amount, 0);
+    const manual = +(finalPrice - basePrice - extrasTotal).toFixed(2);
+    if (Math.abs(manual) > 0.009) {
+      items.push({
+        transaction_id: transaction.id,
+        item_type: 'product',
+        service_id: null,
+        inventory_id: null,
+        name: 'Manual Adjustment',
+        description: null,
+        quantity: 1,
+        unit_price: manual,
+        total_price: manual,
+      });
+    }
+    // Insert items
+    if (items.length > 0) {
+      const { error: itemsError } = await supabase
+        .from('transaction_items')
+        .insert(items);
+      if (itemsError) {
+        console.error('Failed to insert transaction items', itemsError);
+      }
+    }
+    // Update appointment
+    const { data: updatedAppointmentData, error: updateError } = await supabase
+      .from('appointments')
+      .update({
+        status: 'completed',
+        price: finalPrice,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', appointment.id)
+      .select()
+      .single();
+    if (updateError) throw updateError;
+    const updatedAppointment = updatedAppointmentData as Appointment;
+    // Invoke invoice creation
+    try {
+      await supabase.functions.invoke('create-invoice', {
+        body: {
+          transactionId: transaction.id,
+          invoiceType: 'invoice',
+          salonId: appointment.salon_id,
+        },
+      });
+    } catch (fnErr: any) {
+      console.error('Failed to invoke create-invoice function', fnErr);
+    }
+    // Update local lists
+    setUpcomingAppointments((prev) => prev.map((a) => (a.id === appointment.id ? (updatedAppointment as any) : a)));
+    setWeekAppointments((prev) => prev.map((a) => (a.id === appointment.id ? (updatedAppointment as any) : a)));
+    setArchivedAppointments((prev) => prev.map((a) => (a.id === appointment.id ? (updatedAppointment as any) : a)));
+    return updatedAppointment;
+  };
+
   const submitLeaveRequest = async (leaveData: {
     leave_type: 'vacation' | 'sick' | 'personal' | 'training';
     start_date: string;
@@ -284,5 +450,6 @@ export function useEmployeeData() {
     submitLeaveRequest,
     refetch: fetchEmployeeData,
     updateAppointment,
+    completeAppointment,
   };
 }
