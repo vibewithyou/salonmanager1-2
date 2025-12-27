@@ -35,13 +35,15 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-        {/* Display consent manager overlay for users who haven't accepted all policies */}
-        <ConsentManager />
-          {/* Use HashRouter instead of BrowserRouter so deep links work
-             when the app is served from static hosting. This avoids 404
-             errors when navigating directly to pages like /salon/:id. */}
-          <HashRouter>
-            <Routes>
+        {/* Use HashRouter instead of BrowserRouter so deep links work
+           when the app is served from static hosting. This avoids 404
+           errors when navigating directly to pages like /salon/:id. */}
+        <HashRouter>
+          {/* Display consent manager overlay for users who haven't accepted all policies.  
+              It must be placed inside the router so that any internal links (e.g. to the
+              profile page) have access to routing context. */}
+          <ConsentManager />
+          <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
