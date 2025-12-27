@@ -235,6 +235,21 @@ const SalonBooking = () => {
     );
   }
 
+  // If the salon has disabled public booking, show a notice and prevent booking. Staff can still
+  // book appointments via internal dashboards. We simply display a message and a link back.
+  if (salon.booking_enabled === false) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
+        <Scissors className="w-16 h-16 text-muted-foreground mb-4" />
+        <h1 className="text-2xl font-display font-bold mb-2">{t('booking.disabledTitle', 'Booking unavailable')}</h1>
+        <p className="text-muted-foreground mb-6">{t('booking.disabledMessage', 'This salon currently does not accept online bookings. Please contact the salon directly to make an appointment.')}</p>
+        <Button asChild>
+          <Link to="/">{t('common.backToHome')}</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}

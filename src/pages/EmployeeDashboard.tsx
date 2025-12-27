@@ -47,6 +47,7 @@ const EmployeeDashboard = () => {
     checkOut,
     submitLeaveRequest,
     refetch,
+    updateAppointment,
   } = useEmployeeData();
 
   // Fetch services for POS
@@ -218,6 +219,11 @@ const EmployeeDashboard = () => {
                   appointments={appointments}
                   showingWeek={showWeek}
                   onToggleWeek={toggleShowWeek}
+                  /* Stylists can reschedule their own appointments (date & time) */
+                  canReschedule
+                  /* Stylists cannot reassign appointments to other stylists */
+                  canReassign={false}
+                  onUpdate={updateAppointment}
                 />
               </div>
 

@@ -41,6 +41,7 @@ import BookingQRCode from '@/components/dashboard/BookingQRCode';
 // Import a lightweight placeholder component for the time tracking tab.
 import TimeTrackingPlaceholder from '@/components/dashboard/TimeTrackingPlaceholder';
 import PastAppointmentsTab from '@/components/dashboard/PastAppointmentsTab';
+import SalonSettingsTab from '@/components/dashboard/SalonSettingsTab';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -73,6 +74,7 @@ const AdminDashboard = () => {
     deleteService,
     updateLeaveRequest,
     refetch,
+    updateAppointment,
   } = useAdminData();
 
   const [activeTab, setActiveTab] = useState('overview');
@@ -522,6 +524,11 @@ const AdminDashboard = () => {
               <Calendar className="w-4 h-4" />
               {t('dashboard.pastAppointments', 'Vergangene Termine')}
             </TabsTrigger>
+            {/* Salon settings tab */}
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="w-4 h-4" />
+              {t('salonSettings.title', 'Salon Settings')}
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -596,6 +603,13 @@ const AdminDashboard = () => {
                 }))}
                 showingWeek={showWeek}
                 onToggleWeek={toggleShowWeek}
+                /* Allow admins to reschedule and reassign appointments */
+                canReschedule
+                canReassign
+                /* Provide a list of employees to select when reassigning */
+                employees={employees.map(emp => ({ id: emp.id, display_name: employeeNameMap[emp.id] }))}
+                /* Pass the update handler to persist changes */
+                onUpdate={updateAppointment}
               />
               <LeaveRequestsList
                 leaveRequests={pendingLeaveRequests.map(l => ({
@@ -618,6 +632,11 @@ const AdminDashboard = () => {
                 status: a.status || 'pending',
               }))}
             />
+          </TabsContent>
+
+          {/* Salon Settings Tab */}
+          <TabsContent value="settings">
+            <SalonSettingsTab />
           </TabsContent>
 
           {/* Customers Tab */}

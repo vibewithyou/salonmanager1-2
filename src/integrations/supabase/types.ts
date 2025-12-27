@@ -685,6 +685,34 @@ export type Database = {
           owner_id: string | null
           phone: string | null
           postal_code: string | null
+          /**
+           * Street name for the salon's physical address. Added to support
+           * structured addresses alongside the existing `address` field. Can
+           * be null if the legacy `address` string is still used.
+           */
+          street: string | null
+          /**
+           * House number for the salon's address. Combined with street,
+           * postal code and city to form a full address. May be null.
+           */
+          house_number: string | null
+          /**
+           * Primary website URL for the salon. Used for displaying a link
+           * on the landing page or in communications. Optional.
+           */
+          website: string | null
+          /**
+           * Determines whether the public booking calendar is enabled. When
+           * false, customers cannot self‑book appointments, but staff can
+           * still create appointments internally. Defaults to true.
+           */
+          booking_enabled: boolean | null
+          /**
+           * JSON object describing special opening hours for holidays or
+           * other exceptions (e.g. { "2025-12-24": { open: "10:00", close:
+           * "14:00", closed: false } }). Null when no special hours are set.
+           */
+          special_opening_hours: Json | null
           updated_at: string
         }
         Insert: {
@@ -701,6 +729,16 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           postal_code?: string | null
+          /** See Row.street */
+          street?: string | null
+          /** See Row.house_number */
+          house_number?: string | null
+          /** See Row.website */
+          website?: string | null
+          /** See Row.booking_enabled */
+          booking_enabled?: boolean | null
+          /** See Row.special_opening_hours */
+          special_opening_hours?: Json | null
           updated_at?: string
         }
         Update: {
@@ -717,6 +755,16 @@ export type Database = {
           owner_id?: string | null
           phone?: string | null
           postal_code?: string | null
+          /** See Row.street */
+          street?: string | null
+          /** See Row.house_number */
+          house_number?: string | null
+          /** See Row.website */
+          website?: string | null
+          /** See Row.booking_enabled */
+          booking_enabled?: boolean | null
+          /** See Row.special_opening_hours */
+          special_opening_hours?: Json | null
           updated_at?: string
         }
         Relationships: []

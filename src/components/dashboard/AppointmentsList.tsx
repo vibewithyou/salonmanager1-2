@@ -47,6 +47,28 @@ interface AppointmentsListProps {
   showingWeek?: boolean;
   /** Callback fired when the toggle button is clicked. */
   onToggleWeek?: () => void;
+
+  /**
+   * Whether the current user can reschedule appointments. If true, an edit
+   * option will appear in the appointment detail modal. Defaults to false.
+   */
+  canReschedule?: boolean;
+  /**
+   * Whether the current user can reassign appointments to another stylist.
+   * This should only be true for admins. Defaults to false.
+   */
+  canReassign?: boolean;
+  /**
+   * List of employees available for reassignment. Required only when
+   * canReassign is true.
+   */
+  employees?: { id: string; display_name: string }[];
+  /**
+   * Handler to update an appointment. It receives the appointment id and
+   * a partial updates object. Should return a promise. Required when
+   * rescheduling is enabled.
+   */
+  onUpdate?: (id: string, updates: any) => Promise<any>;
 }
 
 export function AppointmentsList({ 
@@ -55,6 +77,10 @@ export function AppointmentsList({
   showToggle = true,
   showingWeek = false,
   onToggleWeek,
+  canReschedule = false,
+  canReassign = false,
+  employees = [],
+  onUpdate,
 }: AppointmentsListProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
@@ -163,6 +189,10 @@ export function AppointmentsList({
         appointment={selectedAppointment}
         open={!!selectedAppointment}
         onClose={() => setSelectedAppointment(null)}
+        canReschedule={canReschedule}
+        canReassign={canReassign}
+        employees={employees}
+        onUpdate={onUpdate}
       />
     </Card>
   );

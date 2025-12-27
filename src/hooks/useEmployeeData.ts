@@ -211,6 +211,34 @@ export function useEmployeeData() {
     return { data, error };
   };
 
+  /**
+   * Update an appointment. Employees are only allowed to modify start_time
+   * and end_time for their own appointments. Any attempt to update other
+   * fields such as employee_id will be ignored on the client side. After
+   * updating, the local appointment lists are updated accordingly.
+   */
+  const updateAppointment = async (id: string, updates: Partial<Appointment>) => {
+    // Only allow employees to update start_time and end_time
+    const allowedUpdates: Partial<Appointment> = {};
+    if (updates.start_time) allowedUpdates.start_time = updates.start_time;
+    if (updates.end_time) allowedUpdates.end_time = updates.end_time;
+    const { data, error } = await supabase
+      .from('appointments')
+      .update(allowedUpdates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      throw error;
+    }
+    if (data) {
+      setUpcomingAppointments((prev) => prev.map((a) => (a.id === id ? (data as Appointment) : a)));
+      setWeekAppointments((prev) => prev.map((a) => (a.id === id ? (data as Appointment) : a)));
+      setArchivedAppointments((prev) => prev.map((a) => (a.id === id ? (data as Appointment) : a)));
+    }
+    return data as Appointment;
+  };
+
   const submitLeaveRequest = async (leaveData: {
     leave_type: 'vacation' | 'sick' | 'personal' | 'training';
     start_date: string;
@@ -255,5 +283,6 @@ export function useEmployeeData() {
     checkOut,
     submitLeaveRequest,
     refetch: fetchEmployeeData,
+    updateAppointment,
   };
 }

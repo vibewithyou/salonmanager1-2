@@ -281,6 +281,30 @@ export function useAdminData() {
     return result;
   };
 
+  /**
+   * Update an appointment. Admins can change any fields including the
+   * assigned employee. After updating in Supabase, this helper updates
+   * local appointment lists (upcoming, week and archived) to reflect
+   * the changes. Returns the updated appointment.
+   */
+  const updateAppointment = async (id: string, updates: Partial<Appointment>) => {
+    const { data, error } = await supabase
+      .from('appointments')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      throw error;
+    }
+    if (data) {
+      setUpcomingAppointments((prev) => prev.map((a) => (a.id === id ? (data as Appointment) : a)));
+      setWeekAppointments((prev) => prev.map((a) => (a.id === id ? (data as Appointment) : a)));
+      setArchivedAppointments((prev) => prev.map((a) => (a.id === id ? (data as Appointment) : a)));
+    }
+    return data as Appointment;
+  };
+
   return {
     isAdmin,
     salon,
@@ -303,6 +327,7 @@ export function useAdminData() {
     updateService,
     deleteService,
     updateLeaveRequest,
+    updateAppointment,
     refetch: checkAdminAndFetchData,
   };
 }

@@ -278,13 +278,28 @@
     "noStylistNotes": "No stylist notes yet",
     "image": "Image",
     "bufferBefore": "Buffer before",
-    "bufferAfter": "Buffer after"
-    ,"appointmentNumber": "Appointment number"
+    "bufferAfter": "Buffer after",
+    "appointmentNumber": "Appointment number",
+    "reschedule": "Reschedule",
+    "newDate": "New date",
+    "newTime": "New time",
+    "newStylist": "New stylist"
   },
   "pastAppointments": {
     "title": "Past Appointments",
     "searchPlaceholder": "Search by name, service or date",
     "noResults": "No appointments found"
+  },
+  "salonSettings": {
+    "title": "Salon Settings",
+    "general": "General",
+    "address": "Address",
+    "booking": "Booking",
+    "bookingEnabled": "Enable public booking",
+    "bookingExplanation": "If disabled, customers cannot book appointments themselves. Staff can still create appointments internally.",
+    "noSalon": "No salon found",
+    "updateSuccess": "Salon settings updated successfully",
+    "website": "Website"
   },
   "staff": {
     "owner": "Owner"
@@ -506,6 +521,8 @@
     "timeTooEarly": "Time is before opening time ({{time}})",
     "timeTooLate": "Service ends after closing. Latest booking: {{time}}",
     "timeConflict": "Time conflict with existing appointment ({{start}} - {{end}})"
+    ,"disabledTitle": "Booking unavailable"
+    ,"disabledMessage": "This salon currently does not accept online bookings. Please contact the salon directly to make an appointment."
   },
   "pos": {
     "terminal": "POS",

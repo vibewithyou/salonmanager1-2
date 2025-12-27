@@ -334,12 +334,27 @@
     "image": "Bild",
     "bufferBefore": "Puffer vor",
     "bufferAfter": "Puffer nach",
-    "appointmentNumber": "Terminnummer"
+    "appointmentNumber": "Terminnummer",
+    "reschedule": "Termin verschieben",
+    "newDate": "Neues Datum",
+    "newTime": "Neue Zeit",
+    "newStylist": "Neuer Stylist"
   },
   "pastAppointments": {
     "title": "Vergangene Termine",
     "searchPlaceholder": "Suche nach Name, Service oder Datum",
     "noResults": "Keine Termine gefunden"
+  },
+  "salonSettings": {
+    "title": "Salon-Einstellungen",
+    "general": "Allgemein",
+    "address": "Adresse",
+    "booking": "Buchung",
+    "bookingEnabled": "Öffentliche Buchung aktivieren",
+    "bookingExplanation": "Wenn deaktiviert, können Kunden keine Termine selbst buchen. Mitarbeiter können weiterhin intern Termine erstellen.",
+    "noSalon": "Kein Salon gefunden",
+    "updateSuccess": "Saloneinstellungen wurden erfolgreich aktualisiert",
+    "website": "Webseite"
   },
   "staff": {
     "owner": "Inhaber"
@@ -561,6 +576,8 @@
     "timeTooEarly": "Die Zeit liegt vor der Öffnungszeit ({{time}})",
     "timeTooLate": "Die Dienstleistung endet nach Ladenschluss. Späteste Buchung: {{time}}",
     "timeConflict": "Zeitkonflikt mit einem bestehenden Termin ({{start}} - {{end}})"
+    ,"disabledTitle": "Terminbuchung nicht verfügbar"
+    ,"disabledMessage": "Dieser Salon nimmt derzeit keine Online-Buchungen entgegen. Bitte kontaktieren Sie den Salon direkt, um einen Termin zu vereinbaren."
   },
   "pos": {
     "terminal": "Kasse",

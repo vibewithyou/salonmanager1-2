@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Calendar, Clock, User, Scissors, Image as ImageIcon, MessageSquare } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
 
 interface AppointmentInfo {
   id: string;
@@ -47,19 +48,33 @@ interface AppointmentInfoModalProps {
   appointment: AppointmentInfo | null;
   open: boolean;
   onClose: () => void;
+  /** Whether the current user can reschedule this appointment. */
+  canReschedule?: boolean;
+  /** Whether the current user can reassign this appointment to a different stylist (admin only). */
+  canReassign?: boolean;
+  /** List of employees available for reassignment. Only used when canReassign is true. */
+  employees?: { id: string; display_name: string }[];
+  /** Callback to update the appointment. Required when rescheduling is enabled. */
+  onUpdate?: (id: string, updates: Partial<AppointmentInfo>) => Promise<any>;
 }
 
 /**
  * Displays detailed information about an appointment. This modal is used
  * throughout the dashboard views when clicking on an appointment entry.
  */
-export function AppointmentInfoModal({ appointment, open, onClose }: AppointmentInfoModalProps) {
+export function AppointmentInfoModal({ appointment, open, onClose, canReschedule = false, canReassign = false, employees = [], onUpdate }: AppointmentInfoModalProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
 
   // Local state for fetching the customer's birthday information when
   // customer_profile_id is provided.
   const [customerBirthdate, setCustomerBirthdate] = useState<Date | null>(null);
+
+  // Editing state for rescheduling. When true, show editing form.
+  const [editing, setEditing] = useState(false);
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editEmployee, setEditEmployee] = useState('');
 
   useEffect(() => {
     async function fetchBirthdate() {
@@ -244,6 +259,92 @@ export function AppointmentInfoModal({ appointment, open, onClose }: Appointment
               {t('appointments.noStylistNotes')}
             </p>
           </div>
+
+          {/* Reschedule controls */}
+          {canReschedule && (
+            <div className="mt-4">
+              {!editing ? (
+                <Button onClick={() => {
+                  if (!appointment) return;
+                  // Pre-fill form values with current appointment data
+                  setEditDate(appointment.start_time.split('T')[0]);
+                  setEditTime(format(parseISO(appointment.start_time), 'HH:mm'));
+                  // For reassigning, default to current employee id (if provided)
+                  setEditEmployee((appointment as any).employee_id || '');
+                  setEditing(true);
+                }}>
+                  {t('appointments.reschedule', 'Termin verschieben')}
+                </Button>
+              ) : (
+                <div className="space-y-3 p-3 rounded-lg bg-muted/50">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium" htmlFor="editDate">{t('appointments.newDate', 'Neues Datum')}</label>
+                    <input
+                      id="editDate"
+                      type="date"
+                      className="border border-input rounded px-2 py-1"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                    />
+                    <label className="text-sm font-medium" htmlFor="editTime">{t('appointments.newTime', 'Neue Zeit')}</label>
+                    <input
+                      id="editTime"
+                      type="time"
+                      className="border border-input rounded px-2 py-1"
+                      value={editTime}
+                      onChange={(e) => setEditTime(e.target.value)}
+                    />
+                    {canReassign && employees.length > 0 && (
+                      <>
+                        <label className="text-sm font-medium" htmlFor="editEmployee">{t('appointments.newStylist', 'Neuer Stylist')}</label>
+                        <select
+                          id="editEmployee"
+                          className="border border-input rounded px-2 py-1"
+                          value={editEmployee}
+                          onChange={(e) => setEditEmployee(e.target.value)}
+                        >
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.id}>{emp.display_name}</option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      onClick={async () => {
+                        if (!onUpdate || !appointment) return;
+                        // Compute new start and end times
+                        const newStart = new Date(`${editDate}T${editTime}`);
+                        const duration = appointment.service?.duration_minutes ?? 30;
+                        const newEnd = new Date(newStart.getTime() + duration * 60000);
+                        const updates: any = {
+                          start_time: newStart.toISOString(),
+                          end_time: newEnd.toISOString(),
+                        };
+                        if (canReassign) {
+                          updates.employee_id = editEmployee || null;
+                        }
+                        try {
+                          await onUpdate(appointment.id, updates);
+                          setEditing(false);
+                          // Close modal as we have updated data in the parent lists
+                          onClose();
+                        } catch (err) {
+                          console.error('Failed to update appointment', err);
+                        }
+                      }}
+                    >
+                      {t('common.save', 'Speichern')}
+                    </Button>
+                    <Button variant="secondary" onClick={() => setEditing(false)}>
+                      {t('common.cancel', 'Abbrechen')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
