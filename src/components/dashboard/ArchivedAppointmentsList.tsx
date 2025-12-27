@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Calendar, ChevronRight } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -25,33 +24,22 @@ interface Appointment {
   buffer_before?: number | null;
   buffer_after?: number | null;
   image_url?: string | null;
-  /**
-   * Optional reference to a customer profile. When present, additional
-   * information like the customer's birthday can be fetched for display
-   * in the appointment detail modal.
-   */
-  customer_profile_id?: string | null;
 }
 
-interface AppointmentsListProps {
+interface ArchivedAppointmentsListProps {
+  /** The list of archived appointments to display */
   appointments: Appointment[];
-  /** Optional title. If omitted, a default label is chosen based on the view. */
+  /** Optional title override. If not provided, a default translation key is used. */
   title?: string;
-  /** Show the toggle button for switching views. Defaults to true. */
-  showToggle?: boolean;
-  /** Whether the week view (next 7 days) is active. If false, shows next 5 appointments. */
-  showingWeek?: boolean;
-  /** Callback fired when the toggle button is clicked. */
-  onToggleWeek?: () => void;
 }
 
-export function AppointmentsList({ 
-  appointments, 
-  title, 
-  showToggle = true,
-  showingWeek = false,
-  onToggleWeek,
-}: AppointmentsListProps) {
+/**
+ * Displays a list of past appointments. This component is used in both the admin
+ * and employee dashboards to show all appointments that occurred in the past
+ * (up to four years ago). Unlike the main AppointmentsList, this component
+ * does not offer a toggle because archived data is always historical.
+ */
+export function ArchivedAppointmentsList({ appointments, title }: ArchivedAppointmentsListProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
 
@@ -90,23 +78,17 @@ export function AppointmentsList({
   return (
     <Card className="border-border">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg font-display">
-            <Calendar className="w-5 h-5 text-primary" />
-            {title || (showingWeek ? t('dashboard.weekAppointments') : t('dashboard.nextAppointments'))}
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-primary" />
+          <CardTitle className="text-lg font-display">
+            {title || t('dashboard.archivedAppointments')}
           </CardTitle>
-          {showToggle && onToggleWeek && (
-            <Button variant="ghost" size="sm" onClick={onToggleWeek}>
-              {showingWeek ? t('common.showNext') : t('common.viewWeek')}
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          )}
         </div>
       </CardHeader>
       <CardContent>
         {appointments.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            {showingWeek ? t('dashboard.noWeekAppointments') : t('dashboard.noNextAppointments')}
+            {t('dashboard.noArchivedAppointments')}
           </div>
         ) : (
           <div className="space-y-3 max-h-[500px] overflow-y-auto">
@@ -129,10 +111,15 @@ export function AppointmentsList({
                     {apt.service?.duration_minutes || 30} {t('time.minutes')}
                   </p>
                 </div>
-                <div className={`w-1 h-12 rounded-full ${
-                  apt.status === 'confirmed' ? 'bg-sage' : 
-                  apt.status === 'pending' ? 'bg-gold' : 'bg-muted-foreground'
-                }`} />
+                <div
+                  className={`w-1 h-12 rounded-full ${
+                    apt.status === 'confirmed'
+                      ? 'bg-sage'
+                      : apt.status === 'pending'
+                      ? 'bg-gold'
+                      : 'bg-muted-foreground'
+                  }`}
+                />
                 <div className="flex-1">
                   <p className="font-medium text-foreground">
                     {apt.guest_name || t('dashboard.anonymousCustomer')}
@@ -145,7 +132,11 @@ export function AppointmentsList({
                   <p className="text-sm font-medium text-foreground">
                     €{apt.service?.price?.toFixed(2) || '0.00'}
                   </p>
-                  <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${getStatusColor(apt.status || 'pending')}`}>
+                  <span
+                    className={`inline-block px-2 py-0.5 text-xs rounded-full ${getStatusColor(
+                      apt.status || 'pending'
+                    )}`}
+                  >
                     {getStatusLabel(apt.status || 'pending')}
                   </span>
                 </div>
@@ -154,7 +145,7 @@ export function AppointmentsList({
           </div>
         )}
       </CardContent>
-      {/* Detail modal for appointment */}
+      {/* Appointment details modal */}
       <AppointmentInfoModal
         appointment={selectedAppointment}
         open={!!selectedAppointment}
@@ -163,3 +154,5 @@ export function AppointmentsList({
     </Card>
   );
 }
+
+export default ArchivedAppointmentsList;

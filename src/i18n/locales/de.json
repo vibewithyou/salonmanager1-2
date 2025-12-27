@@ -44,6 +44,9 @@
     "reject": "Ablehnen",
     "backToHome": "Zurück zur Startseite",
     "more": "weitere"
+    ,
+    "viewWeek": "Diese Woche",
+    "showNext": "Nächste"
   },
   "nav": {
     "home": "Startseite",
@@ -60,6 +63,32 @@
     "logout": "Abmelden",
     "login": "Anmelden",
     "register": "Registrieren"
+  },
+
+  "customersPage": {
+    "title": "Kundenkartei",
+    "addCustomer": "Kunde hinzufügen",
+    "editCustomer": "Kunde bearbeiten",
+    "deleteCustomer": "Kunde löschen",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "birthdate": "Geburtsdatum",
+    "phone": "Telefon",
+    "email": "E-Mail",
+    "address": "Adresse",
+    "notes": "Notizen",
+    "images": "Bilder",
+    "noCustomers": "Keine Kunden gefunden.",
+    "searchPlaceholder": "Suche...",
+    "birthdays": "Geburtstage",
+    "todayBirthdays": "Geburtstage heute",
+    "monthBirthdays": "Geburtstage in diesem Monat",
+    "noBirthdays": "Keine Geburtstage in diesem Zeitraum.",
+    "appointments": "Vergangene Termine",
+    "noAppointments": "Keine vergangenen Termine vorhanden.",
+    "saveCustomer": "Kunde speichern",
+    "updateCustomer": "Kunde aktualisieren",
+    "createCustomer": "Kunde anlegen"
   },
   "auth": {
     "login": "Anmelden",
@@ -248,6 +277,12 @@
     "startWork": "Arbeit beginnen",
     "endWork": "Arbeit beenden",
     "workdayComplete": "Arbeitstag beendet",
+    "nextAppointments": "Nächste Termine",
+    "weekAppointments": "Termine diese Woche",
+    "noNextAppointments": "Keine bevorstehenden Termine",
+    "noWeekAppointments": "Keine Termine diese Woche",
+    "archivedAppointments": "Vergangene Termine",
+    "noArchivedAppointments": "Keine vergangenen Termine",
     "requestLeave": "Urlaub beantragen",
     "leaveType": "Art des Urlaubs",
     "selectLeaveType": "Urlaubsart wählen",
@@ -287,6 +322,13 @@
     "pending": "Ausstehend",
     "cancelled": "Storniert",
     "completed": "Abgeschlossen"
+    ,
+    "customerNotes": "Kundenanmerkungen",
+    "stylistNotes": "Stylist-Notizen",
+    "noStylistNotes": "Keine Stylist-Notizen vorhanden",
+    "image": "Bild",
+    "bufferBefore": "Puffer vor",
+    "bufferAfter": "Puffer nach"
   },
   "staff": {
     "owner": "Inhaber"

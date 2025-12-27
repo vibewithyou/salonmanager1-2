@@ -24,9 +24,13 @@ export function useAdminData() {
   const [employees, setEmployees] = useState<EmployeeWithProfile[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [allAppointments, setAllAppointments] = useState<Appointment[]>([]);
-  const [showAllAppointments, setShowAllAppointments] = useState(false);
+  // Upcoming appointments for the next few slots and appointments within the next seven days.
+  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
+  const [weekAppointments, setWeekAppointments] = useState<Appointment[]>([]);
+  // Archived appointments from the past four years
+  const [archivedAppointments, setArchivedAppointments] = useState<Appointment[]>([]);
+  // Whether we are currently showing the week view instead of the next 5 upcoming appointments
+  const [showWeek, setShowWeek] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -104,29 +108,44 @@ export function useAdminData() {
 
           setLeaveRequests(leaveData || []);
 
-          // Fetch today's appointments
-          const today = new Date();
-          const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-          const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
-
-          const { data: apptData } = await supabase
+          // Compute date ranges for upcoming, weekly and archived views
+          const now = new Date();
+          // Upcoming appointments: next 5 future appointments (including today)
+          const { data: upcomingData } = await supabase
             .from('appointments')
             .select('*, service:services(name, duration_minutes, price)')
             .eq('salon_id', salonData.id)
-            .gte('start_time', startOfDay)
-            .lte('start_time', endOfDay)
-            .order('start_time', { ascending: true });
+            .gte('start_time', now.toISOString())
+            .order('start_time', { ascending: true })
+            .limit(5);
+          setUpcomingAppointments(upcomingData || []);
 
-          setAppointments(apptData || []);
-
-          // Fetch all appointments for the salon
-          const { data: allApptData } = await supabase
+          // Week appointments: appointments from start of today until end of 7 days later
+          const startOfDay = new Date();
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfWeek = new Date(startOfDay);
+          endOfWeek.setDate(startOfDay.getDate() + 7);
+          endOfWeek.setHours(23, 59, 59, 999);
+          const { data: weekData } = await supabase
             .from('appointments')
             .select('*, service:services(name, duration_minutes, price)')
             .eq('salon_id', salonData.id)
+            .gte('start_time', startOfDay.toISOString())
+            .lte('start_time', endOfWeek.toISOString())
             .order('start_time', { ascending: true });
+          setWeekAppointments(weekData || []);
 
-          setAllAppointments(allApptData || []);
+          // Archived appointments: all past appointments up to four years ago
+          const fourYearsAgo = new Date();
+          fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+          const { data: archivedData } = await supabase
+            .from('appointments')
+            .select('*, service:services(name, duration_minutes, price)')
+            .eq('salon_id', salonData.id)
+            .lt('start_time', startOfDay.toISOString())
+            .gte('start_time', fourYearsAgo.toISOString())
+            .order('start_time', { descending: true });
+          setArchivedAppointments(archivedData || []);
         }
       }
     } catch (error) {
@@ -136,9 +155,10 @@ export function useAdminData() {
     }
   };
 
-  const toggleShowAllAppointments = () => {
-    setShowAllAppointments(!showAllAppointments);
-  };
+  // Note: the old `showAllAppointments` toggle has been removed in favour of a
+  // `showWeek` toggle that switches between the next 5 upcoming appointments
+  // and all appointments for the next seven days. See the returned
+  // `toggleShowWeek` function below for the new behaviour.
 
 // Employee CRUD
   const createEmployee = async (
@@ -267,10 +287,14 @@ export function useAdminData() {
     employees,
     services,
     leaveRequests,
-    appointments: showAllAppointments ? allAppointments : appointments,
-    allAppointments,
-    showAllAppointments,
-    toggleShowAllAppointments,
+    // Expose the currently selected appointment list: either upcoming (next 5) or this week
+    appointments: showWeek ? weekAppointments : upcomingAppointments,
+    // Provide the individual appointment lists for advanced usage
+    upcomingAppointments,
+    weekAppointments,
+    archivedAppointments,
+    showWeek,
+    toggleShowWeek: () => setShowWeek((prev) => !prev),
     loading,
     createEmployee,
     updateEmployee,

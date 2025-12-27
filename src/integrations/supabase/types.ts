@@ -32,6 +32,12 @@ export type Database = {
           start_time: string
           status: Database["public"]["Enums"]["appointment_status"] | null
           updated_at: string
+          /**
+           * Reference to the customer_profiles table. When set, this appointment
+           * belongs to a manually created or linked customer profile. May be null
+           * if the appointment is tied directly to an auth user via customer_id.
+           */
+          customer_profile_id: string | null
         }
         Insert: {
           created_at?: string
@@ -50,6 +56,11 @@ export type Database = {
           start_time: string
           status?: Database["public"]["Enums"]["appointment_status"] | null
           updated_at?: string
+          /**
+           * Reference to the customer_profiles table. Optional when creating
+           * appointments; leave null when the customer is selected from auth.users.
+           */
+          customer_profile_id?: string | null
         }
         Update: {
           created_at?: string
@@ -68,6 +79,11 @@ export type Database = {
           start_time?: string
           status?: Database["public"]["Enums"]["appointment_status"] | null
           updated_at?: string
+          /**
+           * Reference to the customer_profiles table. Optional when updating;
+           * may be set to associate the appointment with a customer file.
+           */
+          customer_profile_id?: string | null
         }
         Relationships: [
           {
@@ -96,6 +112,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_customer_profile_id_fkey"
+            columns: ["customer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -455,6 +478,24 @@ export type Database = {
           last_name: string | null
           phone: string | null
           preferred_language: string | null
+          /**
+           * Indicates whether the user has accepted the cookie policy.  When
+           * `true` the user has accepted; when `false` they have declined
+           * or not yet responded.  New users default to `false`.
+           */
+          cookie_consent: boolean | null
+          /**
+           * Indicates whether the user has accepted the privacy policy.  When
+           * `true` the user has accepted; when `false` they have declined
+           * or not yet responded.  New users default to `false`.
+           */
+          privacy_consent: boolean | null
+          /**
+           * Indicates whether the user has accepted the terms of service.
+           * When `true` the user has accepted; when `false` they have
+           * declined or not yet responded.  New users default to `false`.
+           */
+          terms_consent: boolean | null
           updated_at: string
           user_id: string
         }
@@ -467,6 +508,21 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           preferred_language?: string | null
+          /**
+           * Indicates whether the user has accepted the cookie policy.  When
+           * omitted the default value (`false`) will be used.
+           */
+          cookie_consent?: boolean | null
+          /**
+           * Indicates whether the user has accepted the privacy policy.  When
+           * omitted the default value (`false`) will be used.
+           */
+          privacy_consent?: boolean | null
+          /**
+           * Indicates whether the user has accepted the terms of service.  When
+           * omitted the default value (`false`) will be used.
+           */
+          terms_consent?: boolean | null
           updated_at?: string
           user_id: string
         }
@@ -479,6 +535,24 @@ export type Database = {
           last_name?: string | null
           phone?: string | null
           preferred_language?: string | null
+          /**
+           * Indicates whether the user has accepted the cookie policy.  Set this
+           * to `true` or `false` to update the user's consent.  If omitted the
+           * value will not be changed.
+           */
+          cookie_consent?: boolean | null
+          /**
+           * Indicates whether the user has accepted the privacy policy.  Set this
+           * to `true` or `false` to update the user's consent.  If omitted the
+           * value will not be changed.
+           */
+          privacy_consent?: boolean | null
+          /**
+           * Indicates whether the user has accepted the terms of service.  Set
+           * this to `true` or `false` to update the user's consent.  If omitted
+           * the value will not be changed.
+           */
+          terms_consent?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -981,6 +1055,69 @@ export type Database = {
             columns: ["employee_id"]
             isOneToOne: false
             referencedRelation: "public_employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+
+      /**
+       * Customer profiles store extended information about salon clients.
+       * A profile can optionally be linked to an auth user via user_id,
+       * allowing salons to manage customers without requiring them to have
+       * an account. Profiles belong to a specific salon via salon_id.
+       */
+      customer_profiles: {
+        Row: {
+          id: string
+          salon_id: string
+          user_id: string | null
+          first_name: string
+          last_name: string
+          birthdate: string | null
+          phone: string | null
+          email: string | null
+          address: string | null
+          image_urls: string[] | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          salon_id: string
+          user_id?: string | null
+          first_name: string
+          last_name: string
+          birthdate?: string | null
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          image_urls?: string[] | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          salon_id?: string
+          user_id?: string | null
+          first_name?: string
+          last_name?: string
+          birthdate?: string | null
+          phone?: string | null
+          email?: string | null
+          address?: string | null
+          image_urls?: string[] | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_profiles_salon_id_fkey"
+            columns: ["salon_id"]
+            isOneToOne: false
+            referencedRelation: "salons"
             referencedColumns: ["id"]
           },
         ]

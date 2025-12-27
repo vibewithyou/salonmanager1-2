@@ -6,6 +6,7 @@ import { useEmployeeData } from '@/hooks/useEmployeeData';
 import { TimeTracking } from '@/components/dashboard/TimeTracking';
 import { LeaveRequestForm } from '@/components/dashboard/LeaveRequestForm';
 import { AppointmentsList } from '@/components/dashboard/AppointmentsList';
+import ArchivedAppointmentsList from '@/components/dashboard/ArchivedAppointmentsList';
 import { LeaveRequestsList } from '@/components/dashboard/LeaveRequestsList';
 // Removed ProfileSettings import; profile editing is now handled on a dedicated page
 import { POSDashboard } from '@/components/pos/POSDashboard';
@@ -14,6 +15,7 @@ import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CustomersTab from '@/components/customers/CustomersTab';
 import { Scissors, LogOut, User, Calendar, BarChart3, CreditCard, LayoutDashboard } from 'lucide-react';
 import { format } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
@@ -30,7 +32,14 @@ const EmployeeDashboard = () => {
   const {
     employee,
     profile,
+    // The currently selected appointment list (either next 5 or this week)
     appointments,
+    // Archived appointments from the past four years
+    archivedAppointments,
+    // Whether the week view is active
+    showWeek,
+    // Toggle between upcoming and weekly views
+    toggleShowWeek,
     todayTimeEntry,
     leaveRequests,
     loading,
@@ -140,6 +149,10 @@ const EmployeeDashboard = () => {
               <CreditCard className="w-4 h-4" />
               {t('pos.terminal')}
             </TabsTrigger>
+            <TabsTrigger value="customers" className="gap-2">
+              <User className="w-4 h-4" />
+              {t('nav.customers', 'Customers')}
+            </TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
@@ -154,7 +167,10 @@ const EmployeeDashboard = () => {
                     </div>
                     <div>
                       <p className="text-2xl font-display font-bold text-foreground">{appointments.length}</p>
-                      <p className="text-sm text-muted-foreground">{t('dashboard.appointmentsToday')}</p>
+                      {/* Show a dynamic label depending on whether we are viewing the next appointments or this week's appointments */}
+                      <p className="text-sm text-muted-foreground">
+                        {showWeek ? t('dashboard.weekAppointments') : t('dashboard.nextAppointments')}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -193,7 +209,11 @@ const EmployeeDashboard = () => {
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Left Column - Appointments */}
               <div className="lg:col-span-2 space-y-6">
-                <AppointmentsList appointments={appointments} />
+                <AppointmentsList
+                  appointments={appointments}
+                  showingWeek={showWeek}
+                  onToggleWeek={toggleShowWeek}
+                />
               </div>
 
               {/* Right Column - Time & Leave */}
@@ -207,6 +227,11 @@ const EmployeeDashboard = () => {
                 <LeaveRequestForm onSubmit={submitLeaveRequest} />
                 <LeaveRequestsList leaveRequests={leaveRequests.slice(0, 3)} />
               </div>
+            </div>
+
+            {/* Archived appointments section */}
+            <div className="mt-6">
+              <ArchivedAppointmentsList appointments={archivedAppointments} />
             </div>
           </TabsContent>
 
@@ -225,6 +250,10 @@ const EmployeeDashboard = () => {
                 }))}
               />
             )}
+          </TabsContent>
+          {/* Customers Tab */}
+          <TabsContent value="customers">
+            <CustomersTab salonId={employee?.salon_id || null} />
           </TabsContent>
         </Tabs>
       </main>

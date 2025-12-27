@@ -8,6 +8,7 @@ import { Scissors, User, LogOut } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileSettings } from '@/components/dashboard/ProfileSettings';
+import ConsentSettings from '@/components/ConsentSettings';
 
 /**
  * A dedicated profile page which allows authenticated users to update their
@@ -96,6 +97,10 @@ const ProfilePage = () => {
         ) : (
           <ProfileSettings profile={profile} onUpdate={refetch} />
         )}
+        {/* Consent settings allow users to adjust their cookie, privacy and terms consent */}
+        <div className="mt-8">
+          <ConsentSettings />
+        </div>
       </main>
     </div>
   );

@@ -59,7 +59,13 @@ export function useEmployeeData() {
   const { user } = useAuth();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  // Upcoming and weekly appointments for the employee
+  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
+  const [weekAppointments, setWeekAppointments] = useState<Appointment[]>([]);
+  // Past appointments up to four years ago
+  const [archivedAppointments, setArchivedAppointments] = useState<Appointment[]>([]);
+  // Toggle between upcoming (next 5) and week view
+  const [showWeek, setShowWeek] = useState(false);
   const [todayTimeEntry, setTodayTimeEntry] = useState<TimeEntry | null>(null);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,23 +100,52 @@ export function useEmployeeData() {
       if (empData) {
         setEmployee(empData);
 
-        // Get today's appointments
-        const today = new Date();
-        const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
-        const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
-
-        const { data: apptData } = await supabase
+        // Fetch upcoming appointments (next 5 future appointments)
+        const now = new Date();
+        const { data: upcomingData } = await supabase
           .from('appointments')
           .select(`
             *,
             service:services(name, duration_minutes, price)
           `)
           .eq('employee_id', empData.id)
-          .gte('start_time', startOfDay)
-          .lte('start_time', endOfDay)
-          .order('start_time', { ascending: true });
+          .gte('start_time', now.toISOString())
+          .order('start_time', { ascending: true })
+          .limit(5);
+        setUpcomingAppointments(upcomingData || []);
 
-        setAppointments(apptData || []);
+        // Fetch appointments for the next 7 days
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfDay);
+        endOfWeek.setDate(startOfDay.getDate() + 7);
+        endOfWeek.setHours(23, 59, 59, 999);
+        const { data: weekData } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            service:services(name, duration_minutes, price)
+          `)
+          .eq('employee_id', empData.id)
+          .gte('start_time', startOfDay.toISOString())
+          .lte('start_time', endOfWeek.toISOString())
+          .order('start_time', { ascending: true });
+        setWeekAppointments(weekData || []);
+
+        // Fetch archived appointments (past appointments up to four years ago)
+        const fourYearsAgo = new Date();
+        fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+        const { data: archivedData } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            service:services(name, duration_minutes, price)
+          `)
+          .eq('employee_id', empData.id)
+          .lt('start_time', startOfDay.toISOString())
+          .gte('start_time', fourYearsAgo.toISOString())
+          .order('start_time', { descending: true });
+        setArchivedAppointments(archivedData || []);
 
         // Get today's time entry
         const todayDate = new Date().toISOString().split('T')[0];
@@ -205,7 +240,14 @@ export function useEmployeeData() {
   return {
     employee,
     profile,
-    appointments,
+    // Provide the currently selected appointments list based on the view
+    appointments: showWeek ? weekAppointments : upcomingAppointments,
+    // Expose individual lists for custom usage
+    upcomingAppointments,
+    weekAppointments,
+    archivedAppointments,
+    showWeek,
+    toggleShowWeek: () => setShowWeek((prev) => !prev),
     todayTimeEntry,
     leaveRequests,
     loading,

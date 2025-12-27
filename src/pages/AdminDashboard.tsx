@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminData } from '@/hooks/useAdminData';
 import { AppointmentsList } from '@/components/dashboard/AppointmentsList';
+import ArchivedAppointmentsList from '@/components/dashboard/ArchivedAppointmentsList';
 import { LeaveRequestsList } from '@/components/dashboard/LeaveRequestsList';
 import { POSDashboard } from '@/components/pos/POSDashboard';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
@@ -15,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CustomersTab from '@/components/customers/CustomersTab';
 import {
   Scissors,
   LogOut,
@@ -59,8 +61,9 @@ const AdminDashboard = () => {
     services,
     leaveRequests,
     appointments,
-    showAllAppointments,
-    toggleShowAllAppointments,
+    archivedAppointments,
+    showWeek,
+    toggleShowWeek,
     loading,
     createEmployee,
     updateEmployee,
@@ -502,10 +505,14 @@ const AdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pos" className="gap-2">
+          <TabsTrigger value="pos" className="gap-2">
               <CreditCard className="w-4 h-4" />
               {t('pos.terminal')}
             </TabsTrigger>
+          <TabsTrigger value="customers" className="gap-2">
+            <User className="w-4 h-4" />
+            {t('nav.customers', 'Kunden')}
+          </TabsTrigger>
             <TabsTrigger value="time" className="gap-2">
               <Clock className="w-4 h-4" />
               {t('admin.timeTracking', 'Zeiterfassung')}
@@ -525,7 +532,10 @@ const AdminDashboard = () => {
                     </div>
                     <div>
                       <p className="text-2xl font-display font-bold text-foreground">{appointments.length}</p>
-                      <p className="text-sm text-muted-foreground">{t('dashboard.appointmentsToday')}</p>
+                      {/* The label dynamically reflects whether we are viewing upcoming appointments or this week's appointments. */}
+                      <p className="text-sm text-muted-foreground">
+                        {showWeek ? t('dashboard.weekAppointments') : t('dashboard.nextAppointments')}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -574,13 +584,13 @@ const AdminDashboard = () => {
             </div>
 
             <div className="grid lg:grid-cols-2 gap-6">
-              <AppointmentsList 
+              <AppointmentsList
                 appointments={appointments.map(a => ({
                   ...a,
-                  status: a.status || 'pending'
-                }))} 
-                showingAll={showAllAppointments}
-                onToggleAll={toggleShowAllAppointments}
+                  status: a.status || 'pending',
+                }))}
+                showingWeek={showWeek}
+                onToggleWeek={toggleShowWeek}
               />
               <LeaveRequestsList
                 leaveRequests={pendingLeaveRequests.map(l => ({
@@ -592,6 +602,21 @@ const AdminDashboard = () => {
                 onReject={handleLeaveReject}
               />
             </div>
+
+          {/* Archived appointments section */}
+          <div className="mt-6">
+            <ArchivedAppointmentsList
+              appointments={archivedAppointments.map(a => ({
+                ...a,
+                status: a.status || 'pending',
+              }))}
+            />
+          </div>
+          </TabsContent>
+          {/* Customers Tab */}
+          <TabsContent value="customers">
+            {/* Pass the current salon ID so the customers hook knows which records to fetch */}
+            <CustomersTab salonId={salon?.id || null} />
           </TabsContent>
 
           {/* Employees Tab */}

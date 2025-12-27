@@ -44,6 +44,9 @@
     "reject": "Reject",
     "backToHome": "Back to Home",
     "more": "more"
+    ,
+    "viewWeek": "This Week",
+    "showNext": "Show Next"
   },
   "nav": {
     "home": "Home",
@@ -60,6 +63,32 @@
     "logout": "Logout",
     "login": "Login",
     "register": "Register"
+  },
+
+  "customersPage": {
+    "title": "Customer Files",
+    "addCustomer": "Add Customer",
+    "editCustomer": "Edit Customer",
+    "deleteCustomer": "Delete Customer",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "birthdate": "Birthdate",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "notes": "Notes",
+    "images": "Images",
+    "noCustomers": "No customers found.",
+    "searchPlaceholder": "Search...",
+    "birthdays": "Birthdays",
+    "todayBirthdays": "Birthdays today",
+    "monthBirthdays": "Birthdays this month",
+    "noBirthdays": "No birthdays in this period.",
+    "appointments": "Past Appointments",
+    "noAppointments": "No past appointments available.",
+    "saveCustomer": "Save Customer",
+    "updateCustomer": "Update Customer",
+    "createCustomer": "Create Customer"
   },
   "auth": {
     "login": "Login",
@@ -220,6 +249,15 @@
     "becomeSalonOwner": "Become a Salon Owner?",
     "becomeSalonOwnerDesc": "Create your own salon and manage appointments, employees and more.",
     "startNow": "Start Now"
+    ,
+    "nextAppointments": "Next Appointments",
+    "weekAppointments": "This Week's Appointments",
+    "noNextAppointments": "No upcoming appointments",
+    "noWeekAppointments": "No appointments this week",
+    "archivedAppointments": "Past Appointments",
+    "noArchivedAppointments": "No past appointments",
+    "anonymousCustomer": "Customer",
+    "noService": "No Service"
   },
   "appointments": {
     "details": "Appointment Details",
@@ -227,6 +265,13 @@
     "pending": "Pending",
     "cancelled": "Cancelled",
     "completed": "Completed"
+    ,
+    "customerNotes": "Customer notes",
+    "stylistNotes": "Stylist notes",
+    "noStylistNotes": "No stylist notes yet",
+    "image": "Image",
+    "bufferBefore": "Buffer before",
+    "bufferAfter": "Buffer after"
   },
   "staff": {
     "owner": "Owner"
