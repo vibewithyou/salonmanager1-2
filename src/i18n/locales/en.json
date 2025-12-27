@@ -92,8 +92,10 @@
     "noAppointments": "No past appointments available.",
     "saveCustomer": "Save Customer",
     "updateCustomer": "Update Customer",
-    "createCustomer": "Create Customer"
-    ,"customerNumber": "Customer number"
+    "createCustomer": "Create Customer",
+    "customerNumber": "Customer number",
+    "deleteCustomer": "Delete Customer",
+    "confirmDelete": "Are you sure you want to delete this customer?"
   },
   "auth": {
     "login": "Login",

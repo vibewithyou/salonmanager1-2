@@ -240,6 +240,23 @@ const CustomersTab: React.FC<CustomersTabProps> = ({ salonId }) => {
           appointments={appointments}
           open={!!selectedCustomer}
           onClose={() => setSelectedCustomer(null)}
+          onEdit={(cust) => {
+            // Close the detail modal and open the form pre-filled for editing
+            setSelectedCustomer(null);
+            setEditingCustomer(cust);
+            setShowForm(true);
+          }}
+          onDelete={async (cust) => {
+            // Ask for confirmation before deletion
+            if (window.confirm(t('customersPage.confirmDelete', 'Are you sure you want to delete this customer?'))) {
+              try {
+                await deleteCustomer(cust.id);
+                setSelectedCustomer(null);
+              } catch (err) {
+                console.error('Failed to delete customer', err);
+              }
+            }
+          }}
         />
       )}
 
@@ -475,9 +492,13 @@ interface CustomerDetailModalProps {
   appointments: any[];
   open: boolean;
   onClose: () => void;
+  /** Called when the user wants to edit the customer. */
+  onEdit?: (customer: CustomerProfile) => void;
+  /** Called when the user wants to delete the customer. */
+  onDelete?: (customer: CustomerProfile) => void;
 }
 
-const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, appointments, open, onClose }) => {
+const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, appointments, open, onClose, onEdit, onDelete }) => {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
   const birthday = customer.birthdate ? new Date(customer.birthdate) : null;
@@ -498,38 +519,38 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
         </DialogHeader>
         <div className="space-y-4 mt-2">
           {/* Personal details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center gap-2">
+          <div className="grid grid-cols-1 gap-4">
+            <div className="flex items-center gap-2 flex-wrap">
               <CalendarIcon className="w-4 h-4 text-muted-foreground" />
               <span className="font-medium">{t('customersPage.birthdate')}:</span>
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground break-all">
                 {birthday ? format(birthday, 'dd.MM.yyyy', { locale }) : '-'}
               </span>
               {isBirthdayToday && (
-                <Badge className="ml-2 bg-sage text-sage-foreground">
+                <Badge className="bg-sage text-sage-foreground">
                   {t('customersPage.todayBirthdays')}
                 </Badge>
               )}
               {!isBirthdayToday && isBirthdayMonth && (
-                <Badge className="ml-2 bg-gold text-gold-foreground">
+                <Badge className="bg-gold text-gold-foreground">
                   {t('customersPage.monthBirthdays')}
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <PhoneIcon className="w-4 h-4 text-muted-foreground" />
               <span className="font-medium">{t('customersPage.phone')}:</span>
-              <span className="text-muted-foreground">{customer.phone || '-'}</span>
+              <span className="text-muted-foreground break-all">{customer.phone || '-'}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <MailIcon className="w-4 h-4 text-muted-foreground" />
               <span className="font-medium">{t('customersPage.email')}:</span>
-              <span className="text-muted-foreground">{customer.email || '-'}</span>
+              <span className="text-muted-foreground break-all">{customer.email || '-'}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <MapPinIcon className="w-4 h-4 text-muted-foreground" />
               <span className="font-medium">{t('customersPage.address')}:</span>
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground break-all">
                 {customer.street || customer.house_number || customer.postal_code || customer.city
                   ? [customer.street, customer.house_number, customer.postal_code, customer.city]
                       .filter(Boolean)
@@ -537,9 +558,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
                   : customer.address || '-'}</span>
             </div>
             {/* Customer number */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium">{t('customersPage.customerNumber', 'Kundennummer')}:</span>
-              <span className="text-muted-foreground">{customer.customer_number ?? '-'}</span>
+              <span className="text-muted-foreground break-all">{customer.customer_number ?? '-'}</span>
             </div>
           </div>
           {/* Images */}
@@ -610,6 +631,19 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
               </div>
             )}
           </div>
+        {/* Action buttons for editing and deleting the customer */}
+        <div className="flex justify-end gap-2 pt-4">
+          {onDelete && (
+            <Button variant="destructive" onClick={() => onDelete(customer)}>
+              {t('customersPage.deleteCustomer', 'Delete Customer')}
+            </Button>
+          )}
+          {onEdit && (
+            <Button onClick={() => onEdit(customer)}>
+              {t('customersPage.editCustomer', 'Edit Customer')}
+            </Button>
+          )}
+        </div>
         {/* Appointment details modal for selected appointment */}
         <AppointmentInfoModal
           appointment={selectedAppointment ? { ...selectedAppointment, customer_profile_id: customer.id } : null}

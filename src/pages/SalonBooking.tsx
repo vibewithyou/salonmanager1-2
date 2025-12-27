@@ -165,6 +165,24 @@ const SalonBooking = () => {
     }
     const appointmentNumber = `${prefix}${String(seq).padStart(10, '0')}`;
 
+    // Try to associate the appointment with an existing customer profile based on the email.
+    let customerProfileId: string | null = null;
+    try {
+      if (data.guestEmail) {
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('customer_profiles')
+          .select('id')
+          .eq('salon_id', salonId)
+          .eq('email', data.guestEmail)
+          .maybeSingle();
+        if (!profileError && existingProfile && (existingProfile as any).id) {
+          customerProfileId = (existingProfile as any).id as string;
+        }
+      }
+    } catch (lookupErr) {
+      console.error('Error looking up existing customer profile', lookupErr);
+    }
+
     const { error } = await supabase.from('appointments').insert({
       salon_id: salonId,
       service_id: selectedService,
@@ -179,6 +197,7 @@ const SalonBooking = () => {
       price: selectedServiceData.price,
       status: 'pending',
       appointment_number: appointmentNumber,
+      customer_profile_id: customerProfileId,
     });
 
     setIsSubmitting(false);

@@ -88,9 +88,11 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
 
-  // Local state for fetching the customer's birthday information when
-  // customer_profile_id is provided.
+  // Local state for fetching customer details when a customer_profile_id is provided.
+  // We store the birthdate and the salon-specific customer number (if available)
+  // to display contextual information in the modal.
   const [customerBirthdate, setCustomerBirthdate] = useState<Date | null>(null);
+  const [customerNumber, setCustomerNumber] = useState<string | null>(null);
 
   // Editing state for rescheduling. When true, show editing form.
   const [editing, setEditing] = useState(false);
@@ -120,23 +122,30 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
   }, [reasons]);
 
   useEffect(() => {
-    async function fetchBirthdate() {
+    async function fetchCustomer() {
       if (appointment?.customer_profile_id) {
         const { data, error } = await supabase
           .from('customer_profiles')
-          .select('birthdate')
+          .select('birthdate, customer_number')
           .eq('id', appointment.customer_profile_id)
           .maybeSingle();
-        if (!error && data && data.birthdate) {
-          setCustomerBirthdate(new Date(data.birthdate));
+        if (!error && data) {
+          if (data.birthdate) {
+            setCustomerBirthdate(new Date(data.birthdate));
+          } else {
+            setCustomerBirthdate(null);
+          }
+          setCustomerNumber((data as any).customer_number ?? null);
         } else {
           setCustomerBirthdate(null);
+          setCustomerNumber(null);
         }
       } else {
         setCustomerBirthdate(null);
+        setCustomerNumber(null);
       }
     }
-    fetchBirthdate();
+    fetchCustomer();
   }, [appointment?.customer_profile_id]);
 
   if (!appointment) return null;
@@ -171,11 +180,15 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
     customerBirthdate.getMonth() === todayDate.getMonth() &&
     customerBirthdate.getDate() !== todayDate.getDate();
 
-  return (
+    return (
     <Dialog open={open} onOpenChange={(isOpen) => {
       if (!isOpen) onClose();
     }}>
-      <DialogContent className="max-w-md">
+      {/*
+        Set a max height on the dialog content and enable vertical scrolling
+        so that longer rescheduling or completion forms remain accessible on small screens.
+      */}
+      <DialogContent className="max-w-md overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <span>{t('appointments.details')}</span>
@@ -259,6 +272,15 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
             {appointment.guest_phone && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-medium">{appointment.guest_phone}</span>
+              </div>
+            )}
+            {/* Customer number (from customer profile) */}
+            {customerNumber && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="font-medium">
+                  {t('customersPage.customerNumber', 'Kundennummer')}:
+                </span>
+                <span className="font-medium break-all">{customerNumber}</span>
               </div>
             )}
           </div>

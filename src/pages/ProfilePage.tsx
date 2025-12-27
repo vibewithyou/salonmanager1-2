@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
-import { Scissors, User, LogOut } from 'lucide-react';
+import { Scissors, User, LogOut, ChevronLeft } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileSettings } from '@/components/dashboard/ProfileSettings';
@@ -86,6 +86,19 @@ const ProfilePage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8 max-w-2xl">
+        {/* Back button to return to the previous page. We use navigate(-1) so that the user
+           returns to the appropriate dashboard (admin, employee, etc.). */}
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            {t('common.back')}
+          </Button>
+        </div>
         <h1 className="text-3xl font-display font-bold text-foreground mb-6">
           {t('profile.settings', 'Profil')}
         </h1>

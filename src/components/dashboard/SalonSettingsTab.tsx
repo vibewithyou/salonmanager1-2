@@ -48,10 +48,39 @@ export default function SalonSettingsTab() {
       setEmail(salon.email || '');
       setPhone(salon.phone || '');
       setWebsite(salon.website || '');
-      setStreet(salon.street || '');
-      setHouseNumber(salon.house_number || '');
-      setPostalCode(salon.postal_code || '');
-      setCity(salon.city || '');
+      // Load structured address fields if present
+      const streetVal = salon.street || '';
+      const houseVal = salon.house_number || '';
+      const postalVal = salon.postal_code || '';
+      const cityVal = salon.city || '';
+      // If street and house number are missing but address string exists, try to parse it (e.g. "Main St 5, 12345 City")
+      if (!streetVal && !houseVal && typeof salon.address === 'string' && salon.address.trim().length > 0) {
+        const addressStr = salon.address.trim();
+        const [firstPart, secondPart] = addressStr.split(',');
+        if (firstPart) {
+          const tokens = firstPart.trim().split(' ');
+          const lastToken = tokens.pop() || '';
+          setHouseNumber(lastToken);
+          setStreet(tokens.join(' '));
+        } else {
+          setStreet('');
+          setHouseNumber('');
+        }
+        if (secondPart) {
+          const parts = secondPart.trim().split(' ');
+          const postal = parts.shift() || '';
+          setPostalCode(postal);
+          setCity(parts.join(' '));
+        } else {
+          setPostalCode('');
+          setCity('');
+        }
+      } else {
+        setStreet(streetVal);
+        setHouseNumber(houseVal);
+        setPostalCode(postalVal);
+        setCity(cityVal);
+      }
       // default true when null
       setBookingEnabled(salon.booking_enabled ?? true);
     }

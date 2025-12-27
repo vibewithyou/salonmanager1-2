@@ -92,8 +92,10 @@
     "noAppointments": "Keine vergangenen Termine vorhanden.",
     "saveCustomer": "Kunde speichern",
     "updateCustomer": "Kunde aktualisieren",
-    "createCustomer": "Kunde anlegen"
-    ,"customerNumber": "Kundennummer"
+    "createCustomer": "Kunde anlegen",
+    "customerNumber": "Kundennummer",
+    "deleteCustomer": "Kunde löschen",
+    "confirmDelete": "Sind Sie sicher, dass Sie diesen Kunden löschen möchten?"
   },
   "auth": {
     "login": "Anmelden",
