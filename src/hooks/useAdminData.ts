@@ -56,16 +56,21 @@ export function useAdminData() {
       setIsAdmin(hasAdminRole);
 
       if (hasAdminRole) {
-        // Get salon (admin owns or first active)
-        const { data: salonData } = await supabase
+        // Get salon owned by this admin. Do not fall back to an arbitrary active salon
+        const { data: salonData, error: salonError } = await supabase
           .from('salons')
           .select('*')
-          .or(`owner_id.eq.${user.id},is_active.eq.true`)
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: true })
           .limit(1)
-          .single();
+          .maybeSingle();
+
+        if (salonError) {
+          console.error('Error fetching salon for admin:', salonError);
+        }
 
         if (salonData) {
-          setSalon(salonData);
+          setSalon(salonData as Salon);
 
           // Fetch employees
           const { data: empData } = await supabase
@@ -146,6 +151,15 @@ export function useAdminData() {
             .gte('start_time', fourYearsAgo.toISOString())
             .order('start_time', { descending: true });
           setArchivedAppointments(archivedData || []);
+        } else {
+          // No salon found for this admin. Reset state
+          setSalon(null);
+          setEmployees([]);
+          setServices([]);
+          setLeaveRequests([]);
+          setUpcomingAppointments([]);
+          setWeekAppointments([]);
+          setArchivedAppointments([]);
         }
       }
     } catch (error) {

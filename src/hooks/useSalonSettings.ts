@@ -36,15 +36,15 @@ export function useSalonSettings() {
       const { data, error } = await supabase
         .from('salons')
         .select('*')
-        .or(`owner_id.eq.${user.id}, is_active.eq.true`)
+        .eq('owner_id', user.id)
         .order('created_at', { ascending: true })
         .limit(1)
-        .single();
+        .maybeSingle();
       if (error) {
         setError(error.message);
         setSalon(null);
       } else {
-        setSalon(data);
+        setSalon(data ?? null);
         setError(null);
       }
     } catch (e: any) {
