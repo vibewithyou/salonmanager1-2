@@ -16,9 +16,19 @@ import { toast } from 'sonner';
  * calendar is enabled. Opening hours and special opening hours are
  * displayed but not editable in this initial version.
  */
-export default function SalonSettingsTab() {
+interface SalonSettingsTabProps {
+  /**
+   * Optional salon ID to load settings for. When provided, the
+   * hook will load this salon instead of defaulting to the owner's
+   * first salon. This allows admins with multiple salons to view
+   * and edit the correct record.
+   */
+  salonId?: string;
+}
+
+export default function SalonSettingsTab({ salonId }: SalonSettingsTabProps = {}) {
   const { t } = useTranslation();
-  const { salon, loading, error, updateSalon } = useSalonSettings();
+  const { salon, loading, error, updateSalon } = useSalonSettings(salonId);
 
   // Load extra charge reasons for this salon. We pass undefined when salon is not yet loaded to avoid fetching.
   const {

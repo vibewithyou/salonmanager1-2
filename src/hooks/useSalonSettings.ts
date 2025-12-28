@@ -9,27 +9,62 @@ import { useAuth } from '@/contexts/AuthContext';
  * various fields such as name, contact information, address, opening
  * hours, special opening hours and the booking enabled flag.
  */
-export function useSalonSettings() {
+export function useSalonSettings(salonId?: string) {
   const { user } = useAuth();
   const [salon, setSalon] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user) {
-      fetchSalon();
+    // If a specific salon ID is provided, load that salon. Otherwise,
+    // load the salon owned by the current user. Reset state when
+    // neither user nor salonId is present.
+    if (salonId) {
+      fetchSalonById(salonId);
+    } else if (user) {
+      fetchSalonByOwner();
     } else {
       setSalon(null);
       setLoading(false);
     }
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, salonId]);
+
+  /**
+   * Fetch the salon by its ID. This is used when an admin has
+   * explicitly selected a salon to manage. Errors are stored in
+   * state. If the salon does not exist or the user does not own it,
+   * null is returned.
+   */
+  async function fetchSalonById(id: string) {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('salons')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (error) {
+        setError(error.message);
+        setSalon(null);
+      } else {
+        setSalon(data ?? null);
+        setError(null);
+      }
+    } catch (e: any) {
+      setError(e.message);
+      setSalon(null);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   /**
    * Fetch the salon owned by the current user. If multiple salons
-   * exist, the first active salon is returned. Errors are stored in
+   * exist, the first one created is returned. Errors are stored in
    * state.
    */
-  async function fetchSalon() {
+  async function fetchSalonByOwner() {
     if (!user) return;
     setLoading(true);
     try {
@@ -72,6 +107,19 @@ export function useSalonSettings() {
     }
     setSalon(data);
     return data;
+  }
+
+  /**
+   * Unified fetch function. Calls the appropriate fetch depending on
+   * whether a salonId was provided. Exposed to consumers for
+   * manual refresh.
+   */
+  async function fetchSalon() {
+    if (salonId) {
+      await fetchSalonById(salonId);
+    } else {
+      await fetchSalonByOwner();
+    }
   }
 
   return {

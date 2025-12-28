@@ -640,7 +640,8 @@ const AdminDashboard = () => {
 
           {/* Salon Settings Tab */}
           <TabsContent value="settings">
-            <SalonSettingsTab />
+            {/* Pass current salon ID to load correct settings */}
+            <SalonSettingsTab salonId={salon?.id} />
           </TabsContent>
 
           {/* Customers Tab */}
