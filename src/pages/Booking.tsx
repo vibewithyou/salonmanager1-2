@@ -35,7 +35,13 @@ const Booking = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch all active salons
+  // Fetch all salons that are active **and** allow public bookings.  When a salon
+  // disables its public booking link via the salon settings (`booking_enabled = false`),
+  // it should not appear in the global booking list.  Previously, the
+  // query only filtered on `is_active`, which meant salons with public booking
+  // disabled were still selectable.  This caused users to bypass the
+  // salon-specific booking link restriction.  See also SalonBooking.tsx for
+  // salon-specific handling when a disabled salon is visited directly.
   const { data: salons = [], isLoading: salonsLoading } = useQuery({
     queryKey: ['salons'],
     queryFn: async () => {
@@ -43,10 +49,11 @@ const Booking = () => {
         .from('salons')
         .select('*')
         .eq('is_active', true)
+        .eq('booking_enabled', true)
         .order('name');
-      
+
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 

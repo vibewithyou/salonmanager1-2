@@ -346,6 +346,11 @@
     "manualAdjustment": "Manuelle Anpassung",
     "finalPrice": "Gesamtpreis",
     "noExtraReasons": "Keine Zusatzgründe definiert"
+    ,
+    "profileNotes": "Notizen aus der Kundenkartei",
+    "profileImages": "Kundenbilder"
+    ,
+    "internalNote": "Interne Notiz"
   },
   "pastAppointments": {
     "title": "Vergangene Termine",

@@ -85,11 +85,12 @@ interface AppointmentsListProps {
   canComplete?: boolean;
   /**
    * Handler fired when an appointment is marked as completed. It
-   * receives the appointment id, the final price and a list of
-   * applied extra charges (with id and amount) and should return a
-   * promise. Required when `canComplete` is true.
+   * receives the appointment id, the final price, a list of applied
+   * extra charges (with id and amount) and an internal note. The
+   * internal note is stored in the transaction but not included on
+   * the invoice. Should return a promise. Required when `canComplete` is true.
    */
-  onComplete?: (id: string, finalPrice: number, extras: { id: string; amount: number }[]) => Promise<any>;
+  onComplete?: (id: string, finalPrice: number, extras: { id: string; amount: number }[], internalNote: string) => Promise<any>;
 }
 
 export function AppointmentsList({ 

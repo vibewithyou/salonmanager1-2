@@ -322,6 +322,7 @@ export function useAdminData() {
     id: string,
     finalPrice: number,
     extras: { id: string; amount: number }[],
+    internalNote: string = ''
   ) => {
     // Fetch appointment record to get salon, employee and customer info
     const { data: appointmentData, error: aptError } = await supabase
@@ -338,7 +339,8 @@ export function useAdminData() {
     const subtotal = finalPrice;
     const taxAmount = +(subtotal * taxRate / 100).toFixed(2);
     const totalAmount = +(subtotal + taxAmount).toFixed(2);
-    // Create transaction
+    // Create transaction. The notes field stores the internal note (if provided)
+    // along with any original appointment notes. This note is not included on the invoice.
     const { data: transactionData, error: transactionError } = await supabase
       .from('transactions')
       .insert({
@@ -357,7 +359,7 @@ export function useAdminData() {
         guest_name: appointment.guest_name,
         guest_email: appointment.guest_email,
         guest_phone: appointment.guest_phone,
-        notes: appointment.notes,
+        notes: [appointment.notes || null, internalNote || null].filter(Boolean).join('\n\n') || null,
       })
       .select()
       .single();
@@ -464,7 +466,17 @@ export function useAdminData() {
     if (updateError) {
       throw updateError;
     }
-    const updatedAppointment = updatedAppointmentData as Appointment;
+    let updatedAppointment: Appointment = updatedAppointmentData as Appointment;
+    // Preserve or attach the service information for the updated appointment.
+    if (serviceData) {
+      (updatedAppointment as any).service = {
+        name: serviceData.name,
+        duration_minutes: serviceData.duration_minutes,
+        price: serviceData.price,
+      };
+    } else if ((appointment as any).service) {
+      (updatedAppointment as any).service = (appointment as any).service;
+    }
     // Invoke invoice creation function
     try {
       await supabase.functions.invoke('create-invoice', {

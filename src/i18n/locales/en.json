@@ -291,6 +291,11 @@
     "manualAdjustment": "Manual adjustment",
     "finalPrice": "Total price",
     "noExtraReasons": "No extra reasons defined"
+    ,
+    "profileNotes": "Customer file notes",
+    "profileImages": "Customer images"
+    ,
+    "internalNote": "Internal note"
   },
   "pastAppointments": {
     "title": "Past Appointments",

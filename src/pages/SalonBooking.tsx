@@ -124,46 +124,21 @@ const SalonBooking = () => {
     const startTime = new Date(`${format(data.date, 'yyyy-MM-dd')}T${data.time}:00`);
     const endTime = new Date(startTime.getTime() + selectedServiceData.duration_minutes * 60000);
 
-    // Generate appointment number: prefix from salon and owner + running sequence per salon
-    let prefix = 'ap';
-    try {
-      const { data: salonData } = await supabase
-        .from('salons')
-        .select('name, owner_id')
-        .eq('id', salonId)
-        .single();
-      if (salonData) {
-        const salonName: string = (salonData as any).name || '';
-        let ownerFirst = '';
-        if ((salonData as any).owner_id) {
-          const { data: ownerProfile } = await supabase
-            .from('profiles')
-            .select('first_name')
-            .eq('user_id', (salonData as any).owner_id)
-            .maybeSingle();
-          ownerFirst = ownerProfile?.first_name || '';
-        }
-        const salonInitial = salonName.trim()[0] || '';
-        const ownerInitial = ownerFirst.trim()[0] || '';
-        if (salonInitial) {
-          prefix = salonInitial.toLowerCase() + (ownerInitial ? ownerInitial.toLowerCase() : '');
-        }
-      }
-    } catch (e) {
-      console.error('Error computing appointment prefix:', e);
-    }
-    // Compute next sequence
+    // Generate appointment number: format tYYYYMMDDNNNNN where NNNNN is a daily sequence per salon.
+    const dateStr = format(startTime, 'yyyyMMdd');
     let seq = 1;
     try {
       const { count } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
-        .eq('salon_id', salonId);
+        .eq('salon_id', salonId)
+        .gte('start_time', `${dateStr}T00:00:00`)
+        .lt('start_time', `${dateStr}T23:59:59`);
       seq = ((count ?? 0) + 1);
     } catch (e) {
       console.error('Error computing appointment sequence:', e);
     }
-    const appointmentNumber = `${prefix}${String(seq).padStart(10, '0')}`;
+    const appointmentNumber = `t${dateStr}${String(seq).padStart(5, '0')}`;
 
     // Try to associate the appointment with an existing customer profile based on the email.
     let customerProfileId: string | null = null;
@@ -181,6 +156,91 @@ const SalonBooking = () => {
       }
     } catch (lookupErr) {
       console.error('Error looking up existing customer profile', lookupErr);
+    }
+
+    // If no existing profile was found, create a new customer profile using the
+    // provided booking details.  This ensures that guest bookings are added
+    // to the customer card for future reference.  We generate a unique
+    // customer number based on the salon name and owner initials, similar to
+    // the createCustomer hook.
+    if (!customerProfileId) {
+      try {
+        // Determine prefix using first letters of salon name and owner first name
+        let customerPrefix = 'cu';
+        try {
+          const { data: salonInfo } = await supabase
+            .from('salons')
+            .select('name, owner_id')
+            .eq('id', salonId)
+            .single();
+          if (salonInfo) {
+            const sName: string = (salonInfo as any).name || '';
+            let ownerFirst = '';
+            if ((salonInfo as any).owner_id) {
+              const { data: ownerProf } = await supabase
+                .from('profiles')
+                .select('first_name')
+                .eq('user_id', (salonInfo as any).owner_id)
+                .maybeSingle();
+              ownerFirst = ownerProf?.first_name || '';
+            }
+            const salonInitial = sName.trim()[0] || '';
+            const ownerInitial = ownerFirst.trim()[0] || '';
+            if (salonInitial) {
+              customerPrefix = salonInitial.toLowerCase() + (ownerInitial ? ownerInitial.toLowerCase() : '');
+            }
+          }
+        } catch (err) {
+          console.error('Error computing customer prefix during booking:', err);
+        }
+        // Determine next sequence number for this salon
+        let nextSeq = 1;
+        try {
+          const { count } = await supabase
+            .from('customer_profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('salon_id', salonId);
+          nextSeq = ((count ?? 0) + 1);
+        } catch (err) {
+          console.error('Error computing customer sequence during booking:', err);
+        }
+        const customerNumber = `${customerPrefix}${String(nextSeq).padStart(10, '0')}`;
+        // Parse guest name into first and last names (naive split on first space)
+        let firstName = data.guestName?.trim() || '';
+        let lastName = '';
+        if (firstName) {
+          const parts = firstName.split(' ');
+          firstName = parts[0] || '';
+          lastName = parts.slice(1).join(' ') || '';
+        }
+        // Insert new customer profile
+        const { data: newProfile, error: createError } = await supabase
+          .from('customer_profiles')
+          .insert({
+            salon_id: salonId,
+            user_id: null,
+            first_name: firstName,
+            last_name: lastName,
+            birthdate: null,
+            phone: data.guestPhone || null,
+            email: data.guestEmail || null,
+            street: null,
+            house_number: null,
+            postal_code: null,
+            city: null,
+            address: null,
+            image_urls: null,
+            notes: null,
+            customer_number: customerNumber,
+          })
+          .select()
+          .single();
+        if (!createError && newProfile && (newProfile as any).id) {
+          customerProfileId = (newProfile as any).id as string;
+        }
+      } catch (createErr) {
+        console.error('Error creating customer profile during booking:', createErr);
+      }
     }
 
     const { error } = await supabase.from('appointments').insert({

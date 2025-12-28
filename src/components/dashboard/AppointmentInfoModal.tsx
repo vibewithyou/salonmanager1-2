@@ -65,6 +65,15 @@ interface AppointmentInfoModalProps {
   onUpdate?: (id: string, updates: Partial<AppointmentInfo>) => Promise<any>;
 
   /**
+   * Callback to complete the appointment. When provided, the modal will show
+   * controls for marking an appointment as completed. The callback should
+   * accept an appointment id, the final price, a list of extra charge reasons
+   * with amounts, and an internal note. The internal note is stored in the
+   * transaction record but not included on the invoice.
+   */
+  onComplete?: (id: string, finalPrice: number, extras: { id: string; amount: number }[], internalNote: string) => Promise<any>;
+
+  /**
    * Whether the current user can mark the appointment as completed. When true,
    * the modal will show controls to apply extra charges and generate an invoice.
    */
@@ -93,6 +102,11 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
   // to display contextual information in the modal.
   const [customerBirthdate, setCustomerBirthdate] = useState<Date | null>(null);
   const [customerNumber, setCustomerNumber] = useState<string | null>(null);
+  // Additional customer profile data: stylist notes and stored images. These come
+  // from the customer card (customer_profiles.notes and image_urls) and are
+  // shown in the appointment details when available.
+  const [profileNotes, setProfileNotes] = useState<string | null>(null);
+  const [profileImages, setProfileImages] = useState<string[] | null>(null);
 
   // Editing state for rescheduling. When true, show editing form.
   const [editing, setEditing] = useState(false);
@@ -107,6 +121,10 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
   const [selectedExtras, setSelectedExtras] = useState<{ [id: string]: { selected: boolean; amount: number } }>({});
   // Manual price adjustment applied in addition to extras (may be negative)
   const [manualAdjustment, setManualAdjustment] = useState<number>(0);
+
+  // Internal note provided during completion. This note is not included on the invoice
+  // but is stored in the transaction for internal reference.
+  const [completionNote, setCompletionNote] = useState<string>('');
 
   // Fetch extra charge reasons for the current appointment's salon. If
   // appointment is undefined, no reasons will be loaded.
@@ -126,23 +144,30 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
       if (appointment?.customer_profile_id) {
         const { data, error } = await supabase
           .from('customer_profiles')
-          .select('birthdate, customer_number')
+          .select('birthdate, customer_number, notes, image_urls')
           .eq('id', appointment.customer_profile_id)
           .maybeSingle();
         if (!error && data) {
+          // Birthdate
           if (data.birthdate) {
             setCustomerBirthdate(new Date(data.birthdate));
           } else {
             setCustomerBirthdate(null);
           }
           setCustomerNumber((data as any).customer_number ?? null);
+          setProfileNotes((data as any).notes ?? null);
+          setProfileImages((data as any).image_urls ?? null);
         } else {
           setCustomerBirthdate(null);
           setCustomerNumber(null);
+          setProfileNotes(null);
+          setProfileImages(null);
         }
       } else {
         setCustomerBirthdate(null);
         setCustomerNumber(null);
+        setProfileNotes(null);
+        setProfileImages(null);
       }
     }
     fetchCustomer();
@@ -310,6 +335,55 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
               </div>
               <p className="text-sm text-muted-foreground whitespace-pre-line">
                 {appointment.notes}
+              </p>
+            </div>
+          )}
+
+          {/* Notes provided during booking */}
+          {appointment.notes && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium">{t('appointments.customerNotes')}</span>
+              </div>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {appointment.notes}
+              </p>
+            </div>
+          )}
+
+          {/* Images and notes from customer profile (customer card) */}
+          {profileImages && profileImages.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  {t('appointments.profileImages', 'Kundenbilder')}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {profileImages.map((img, idx) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={idx}
+                    src={img}
+                    alt={t('appointments.profileImages', 'Kundenbilder') as string}
+                    className="w-full rounded-lg max-h-40 object-cover"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          {profileNotes && (
+            <div className="p-3 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  {t('appointments.profileNotes', 'Kundenkartei-Notizen')}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
+                {profileNotes}
               </p>
             </div>
           )}
@@ -483,6 +557,20 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
                       }}
                     />
                   </div>
+
+                  {/* Internal completion note */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-medium" htmlFor="completionNote">
+                      {t('appointments.internalNote', 'Interne Notiz')}
+                    </label>
+                    <textarea
+                      id="completionNote"
+                      className="w-full border border-input rounded px-2 py-1 text-sm"
+                      rows={3}
+                      value={completionNote}
+                      onChange={(e) => setCompletionNote(e.target.value)}
+                    />
+                  </div>
                   {/* Final price summary */}
                   <div className="font-medium">
                     {t('appointments.finalPrice', 'Gesamtpreis')}: €
@@ -514,9 +602,10 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
                         });
                         const finalPrice = base + extraTotal + (manualAdjustment || 0);
                         try {
-                          await onComplete(appointment.id, finalPrice, extraList);
+                          await onComplete(appointment.id, finalPrice, extraList, completionNote);
                           setCompleting(false);
                           setManualAdjustment(0);
+                          setCompletionNote('');
                           onClose();
                         } catch (err) {
                           console.error('Failed to complete appointment', err);
@@ -530,6 +619,7 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
                       onClick={() => {
                         setCompleting(false);
                         setManualAdjustment(0);
+                        setCompletionNote('');
                       }}
                     >
                       {t('common.cancel', 'Abbrechen')}
