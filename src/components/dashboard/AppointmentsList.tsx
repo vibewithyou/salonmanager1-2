@@ -85,12 +85,20 @@ interface AppointmentsListProps {
   canComplete?: boolean;
   /**
    * Handler fired when an appointment is marked as completed. It
-   * receives the appointment id, the final price, a list of applied
-   * extra charges (with id and amount) and an internal note. The
-   * internal note is stored in the transaction but not included on
-   * the invoice. Should return a promise. Required when `canComplete` is true.
+   * receives the appointment id, a list of selected service IDs (at
+   * least one), the final price, a list of applied extra charges
+   * (with id and amount) and an internal note. The internal note
+   * is stored in the transaction but not included on the invoice.
+   * Should return a promise. Required when `canComplete` is true.
    */
-  onComplete?: (id: string, finalPrice: number, extras: { id: string; amount: number }[], internalNote: string) => Promise<any>;
+  onComplete?: (id: string, serviceIds: string[], finalPrice: number, extras: { id: string; amount: number }[], internalNote: string) => Promise<any>;
+
+  /**
+   * List of services available in the salon. Passed down to the appointment
+   * detail modal so the user can select different or multiple services when
+   * completing an appointment.
+   */
+  services?: { id: string; name: string; duration_minutes: number; price: number }[];
 }
 
 export function AppointmentsList({ 
@@ -105,6 +113,7 @@ export function AppointmentsList({
   onUpdate,
   canComplete = false,
   onComplete,
+  services,
 }: AppointmentsListProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
@@ -197,7 +206,11 @@ export function AppointmentsList({
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-foreground">
-                    €{apt.service?.price?.toFixed(2) || '0.00'}
+                    €{
+                      apt.price !== undefined && apt.price !== null
+                        ? (apt.price as number).toFixed(2)
+                        : apt.service?.price?.toFixed(2) || '0.00'
+                    }
                   </p>
                   <span className={`inline-block px-2 py-0.5 text-xs rounded-full ${getStatusColor(apt.status || 'pending')}`}>
                     {getStatusLabel(apt.status || 'pending')}
@@ -219,6 +232,7 @@ export function AppointmentsList({
         onUpdate={onUpdate}
         canComplete={canComplete}
         onComplete={onComplete}
+        services={services}
       />
     </Card>
   );

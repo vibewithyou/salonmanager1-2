@@ -614,6 +614,8 @@ const AdminDashboard = () => {
                 /* Allow admins to complete appointments (generate invoice) */
                 canComplete
                 onComplete={completeAppointment}
+                /* Provide list of services so the appointment modal can allow selecting different or multiple services when completing */
+                services={services}
               />
               <LeaveRequestsList
                 leaveRequests={pendingLeaveRequests.map(l => ({

@@ -20,6 +20,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import AppointmentInfoModal from '@/components/dashboard/AppointmentInfoModal';
+import { useNavigate } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { de, enUS } from 'date-fns/locale';
 
@@ -506,6 +507,9 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
   const isBirthdayToday = birthday && birthday.getDate() === today.getDate() && birthday.getMonth() === today.getMonth();
   const isBirthdayMonth = birthday && birthday.getMonth() === today.getMonth() && birthday.getDate() !== today.getDate();
 
+  // Navigate hook for opening the new appointment page
+  const navigate = useNavigate();
+
   // Local state to manage the selected appointment for detailed view
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null);
   return (
@@ -630,6 +634,12 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customer, app
                 ))}
               </div>
             )}
+          </div>
+          {/* Action button to create a new appointment for this customer */}
+          <div className="mt-4">
+            <Button onClick={() => navigate(`/new-appointment/${customer.id}`)}>
+              {t('customersPage.addAppointment', 'Neuen Termin anlegen')}
+            </Button>
           </div>
         {/* Action buttons for editing and deleting the customer */}
         <div className="flex justify-end gap-2 pt-4">

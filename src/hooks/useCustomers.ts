@@ -84,7 +84,6 @@ export function useCustomers(salonId: string | undefined | null) {
     if (!salonId) {
       throw new Error('Salon ID is required to create a customer');
     }
-
     // Determine prefix: first letter of salon name + first letter of salon owner's first name
     let prefix = 'cu';
     try {
@@ -113,20 +112,27 @@ export function useCustomers(salonId: string | undefined | null) {
     } catch (e) {
       console.error('Error computing customer prefix:', e);
     }
-
-    // Determine next sequence number for this salon
+    // Determine date part (YYYYMMDD) based on current date
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    // Determine next sequence number for this salon and date
     let nextSeq = 1;
     try {
+      const startOfDay = new Date(today);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(startOfDay);
+      endOfDay.setDate(startOfDay.getDate() + 1);
       const { count } = await supabase
         .from('customer_profiles')
         .select('*', { count: 'exact', head: true })
-        .eq('salon_id', salonId);
+        .eq('salon_id', salonId)
+        .gte('created_at', startOfDay.toISOString())
+        .lt('created_at', endOfDay.toISOString());
       nextSeq = ((count ?? 0) + 1);
     } catch (e) {
-      console.error('Error computing customer sequence:', e);
+      console.error('Error computing customer daily sequence:', e);
     }
-
-    const customerNumber = `${prefix}${String(nextSeq).padStart(10, '0')}`;
+    const customerNumber = `${prefix}${dateStr}${String(nextSeq).padStart(5, '0')}`;
 
     // Insert the record with generated customer number and salon_id
     const { data, error } = await supabase

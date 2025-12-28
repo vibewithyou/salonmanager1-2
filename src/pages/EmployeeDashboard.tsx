@@ -224,10 +224,12 @@ const EmployeeDashboard = () => {
                   canReschedule
                   /* Stylists cannot reassign appointments to other stylists */
                   canReassign={false}
-                onUpdate={updateAppointment}
-                /* Stylists can mark appointments as completed and generate invoices */
-                canComplete
-                onComplete={completeAppointment}
+                  onUpdate={updateAppointment}
+                  /* Stylists can mark appointments as completed and generate invoices */
+                  canComplete
+                  onComplete={completeAppointment}
+                  /* Provide services list so stylists can select different or multiple services when completing */
+                  services={services.map(s => ({ id: s.id, name: s.name, duration_minutes: s.duration_minutes, price: s.price }))}
                 />
               </div>
 

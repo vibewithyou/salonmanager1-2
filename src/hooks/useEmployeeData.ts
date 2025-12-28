@@ -251,6 +251,7 @@ export function useEmployeeData() {
    */
   const completeAppointment = async (
     id: string,
+    serviceIds: string[],
     finalPrice: number,
     extras: { id: string; amount: number }[],
     internalNote: string = ''
@@ -265,6 +266,19 @@ export function useEmployeeData() {
       throw aptError || new Error('Appointment not found');
     }
     const appointment = appointmentData as Appointment as any;
+    // Determine service IDs to use. If none provided, fall back to appointment.service_id
+    const selectedServiceIds = (serviceIds && serviceIds.length > 0)
+      ? serviceIds
+      : (appointment.service_id ? [appointment.service_id] : []);
+    // Fetch all selected services
+    let servicesData: any[] = [];
+    if (selectedServiceIds.length > 0) {
+      const { data: svcs, error: svcsError } = await supabase
+        .from('services')
+        .select('*')
+        .in('id', selectedServiceIds);
+      if (!svcsError) servicesData = svcs || [];
+    }
     // Compute tax (19%)
     const taxRate = 19;
     const subtotal = finalPrice;
@@ -299,30 +313,21 @@ export function useEmployeeData() {
     const transaction = transactionData;
     // Prepare items list
     const items: any[] = [];
-    // Fetch service info
-    let serviceData: any = null;
-    if (appointment.service_id) {
-      const { data: svc, error: svcError } = await supabase
-        .from('services')
-        .select('*')
-        .eq('id', appointment.service_id)
-        .single();
-      if (!svcError) serviceData = svc;
-    }
-    if (serviceData) {
+    // Create service transaction items for selected services
+    servicesData.forEach((svc) => {
       items.push({
         transaction_id: transaction.id,
         item_type: 'service',
-        service_id: appointment.service_id,
+        service_id: svc.id,
         inventory_id: null,
-        name: serviceData.name,
-        description: serviceData.description,
+        name: svc.name,
+        description: svc.description,
         quantity: 1,
-        unit_price: serviceData.price,
-        total_price: serviceData.price,
+        unit_price: svc.price,
+        total_price: svc.price,
       });
-    }
-    // Fetch reasons details
+    });
+    // Fetch reasons details and add extra charge items
     let reasons: any[] | null = null;
     if (extras && extras.length > 0) {
       const ids = extras.map((e) => e.id);
@@ -349,9 +354,9 @@ export function useEmployeeData() {
       });
     }
     // Manual adjustment item
-    let basePrice = appointment.price || serviceData?.price || 0;
+    const basePriceSum = servicesData.reduce((sum, svc) => sum + (svc.price || 0), 0);
     const extrasTotal = extras.reduce((sum, e) => sum + e.amount, 0);
-    const manual = +(finalPrice - basePrice - extrasTotal).toFixed(2);
+    const manual = +(finalPrice - basePriceSum - extrasTotal).toFixed(2);
     if (Math.abs(manual) > 0.009) {
       items.push({
         transaction_id: transaction.id,
@@ -374,11 +379,13 @@ export function useEmployeeData() {
         console.error('Failed to insert transaction items', itemsError);
       }
     }
-    // Update appointment
+    // Update appointment: status, service_id (primary), price
+    const primaryServiceId = selectedServiceIds.length > 0 ? selectedServiceIds[0] : appointment.service_id;
     const { data: updatedAppointmentData, error: updateError } = await supabase
       .from('appointments')
       .update({
         status: 'completed',
+        service_id: primaryServiceId,
         price: finalPrice,
         updated_at: new Date().toISOString(),
       })
@@ -387,12 +394,13 @@ export function useEmployeeData() {
       .single();
     if (updateError) throw updateError;
     let updatedAppointment: Appointment = updatedAppointmentData as Appointment;
-    // Preserve or attach service information to the updated appointment
-    if (serviceData) {
+    // Attach primary service info
+    const primaryService = servicesData.find((svc) => svc.id === primaryServiceId);
+    if (primaryService) {
       (updatedAppointment as any).service = {
-        name: serviceData.name,
-        duration_minutes: serviceData.duration_minutes,
-        price: serviceData.price,
+        name: primaryService.name,
+        duration_minutes: primaryService.duration_minutes,
+        price: primaryService.price,
       };
     } else if ((appointment as any).service) {
       (updatedAppointment as any).service = (appointment as any).service;

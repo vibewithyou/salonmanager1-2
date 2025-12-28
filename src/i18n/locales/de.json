@@ -567,6 +567,7 @@
     "booked": "Gebucht",
     "absent": "Abwesend",
     "closed": "Geschlossen",
+    "past": "Vergangenheit",
     "time": "Zeit",
     "date": "Datum",
     "confirmBooking": "Termin bestätigen",

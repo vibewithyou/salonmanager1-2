@@ -512,6 +512,7 @@
     "booked": "Booked",
     "absent": "Absent",
     "closed": "Closed",
+    "past": "Past",
     "time": "Time",
     "date": "Date",
     "confirmBooking": "Confirm Booking",

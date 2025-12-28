@@ -33,6 +33,12 @@ interface AppointmentInfo {
     price: number;
   } | null;
   /**
+   * Primary service ID associated with this appointment. This field is present on
+   * appointments returned from Supabase and is needed when pre‑selecting the
+   * current service during completion.
+   */
+  service_id?: string | null;
+  /**
    * Reference to an associated customer profile. When present, we can fetch
    * additional information about the customer (e.g. birthdate) to show
    * contextual details in the modal.
@@ -64,14 +70,14 @@ interface AppointmentInfoModalProps {
   /** Callback to update the appointment. Required when rescheduling is enabled. */
   onUpdate?: (id: string, updates: Partial<AppointmentInfo>) => Promise<any>;
 
+
   /**
-   * Callback to complete the appointment. When provided, the modal will show
-   * controls for marking an appointment as completed. The callback should
-   * accept an appointment id, the final price, a list of extra charge reasons
-   * with amounts, and an internal note. The internal note is stored in the
-   * transaction record but not included on the invoice.
+   * List of services available in the current salon. This is used when
+   * completing an appointment to allow selection of a different service or
+   * multiple services. Each service must have an id, name, duration_minutes
+   * and price field.
    */
-  onComplete?: (id: string, finalPrice: number, extras: { id: string; amount: number }[], internalNote: string) => Promise<any>;
+  services?: { id: string; name: string; duration_minutes: number; price: number }[];
 
   /**
    * Whether the current user can mark the appointment as completed. When true,
@@ -80,10 +86,12 @@ interface AppointmentInfoModalProps {
   canComplete?: boolean;
   /**
    * Callback fired when an appointment is completed. It receives the
-   * appointment id, the final price (after extras and manual adjustments) and
-   * a list of applied extras with their respective amounts.
+   * appointment id, the list of selected service IDs, the final price
+   * (after extras and manual adjustments), a list of applied extras with
+   * their respective amounts, and an internal note. This replaces the
+   * legacy signature that accepted only finalPrice and extras.
    */
-  onComplete?: (id: string, finalPrice: number, extras: { id: string; amount: number }[]) => Promise<any>;
+  onComplete?: (id: string, serviceIds: string[], finalPrice: number, extras: { id: string; amount: number }[], internalNote: string) => Promise<any>;
 }
 
 /**
@@ -93,6 +101,7 @@ interface AppointmentInfoModalProps {
 export function AppointmentInfoModal({ appointment, open, onClose, canReschedule = false, canReassign = false, employees = [], onUpdate,
   canComplete = false,
   onComplete,
+  services = [],
 }: AppointmentInfoModalProps) {
   const { t, i18n } = useTranslation();
   const locale = i18n.language === 'de' ? de : enUS;
@@ -122,6 +131,11 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
   // Manual price adjustment applied in addition to extras (may be negative)
   const [manualAdjustment, setManualAdjustment] = useState<number>(0);
 
+  // Selection state for services when completing. Each service ID maps to a boolean
+  // indicating whether the service is selected. This is initialised based on the
+  // current appointment's primary service (service_id) when the modal is opened.
+  const [selectedServices, setSelectedServices] = useState<{ [id: string]: boolean }>({});
+
   // Internal note provided during completion. This note is not included on the invoice
   // but is stored in the transaction for internal reference.
   const [completionNote, setCompletionNote] = useState<string>('');
@@ -138,6 +152,31 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
     });
     setSelectedExtras(initial);
   }, [reasons]);
+
+  // Initialise selected services whenever the services list or the appointment's primary service changes.
+  useEffect(() => {
+    const initServices: { [id: string]: boolean } = {};
+    services.forEach((svc) => {
+      initServices[svc.id] = false;
+    });
+    // Pre-select the current appointment's service if present
+    if (appointment?.service_id) {
+      initServices[appointment.service_id] = true;
+    } else if (appointment?.service && services.length > 0) {
+      // If only service name/duration is available but no id, try to match by name
+      const match = services.find((s) => s.name === appointment.service?.name);
+      if (match) initServices[match.id] = true;
+    }
+    setSelectedServices(initServices);
+  }, [services, appointment?.service_id, appointment?.service?.name]);
+
+  // Clear customer-specific state when the appointment changes to avoid showing stale data
+  useEffect(() => {
+    setCustomerBirthdate(null);
+    setCustomerNumber(null);
+    setProfileNotes(null);
+    setProfileImages(null);
+  }, [appointment?.id]);
 
   useEffect(() => {
     async function fetchCustomer() {
@@ -306,6 +345,17 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
                   {t('customersPage.customerNumber', 'Kundennummer')}:
                 </span>
                 <span className="font-medium break-all">{customerNumber}</span>
+              </div>
+            )}
+            {/* Birthdate from customer profile */}
+            {customerBirthdate && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="font-medium">
+                  {t('customersPage.birthdate', 'Geburtstag')}:
+                </span>
+                <span className="font-medium">
+                  {format(customerBirthdate, 'dd.MM.yyyy')}
+                </span>
               </div>
             )}
           </div>
@@ -493,6 +543,36 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
                 </Button>
               ) : (
                 <div className="space-y-3 p-3 rounded-lg bg-muted/50">
+                  {/* Service selection for completion */}
+                  {services && services.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">
+                        {t('appointments.selectServices', 'Dienstleistungen')}
+                      </p>
+                      {services.map((svc) => (
+                        <div key={svc.id} className="flex items-center gap-2">
+                          <input
+                            id={`svc-${svc.id}`}
+                            type="checkbox"
+                            className="h-4 w-4 border border-input rounded"
+                            checked={selectedServices[svc.id] || false}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSelectedServices((prev) => ({
+                                ...prev,
+                                [svc.id]: checked,
+                              }));
+                            }}
+                          />
+                          <label htmlFor={`svc-${svc.id}`} className="flex-1 text-sm">
+                            {svc.name}
+                          </label>
+                          <span className="text-sm text-muted-foreground">€{svc.price.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {/* List of extra charges */}
                   {reasons && reasons.length > 0 ? (
                     reasons.map((reason) => (
@@ -575,12 +655,24 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
                   <div className="font-medium">
                     {t('appointments.finalPrice', 'Gesamtpreis')}: €
                     {(() => {
-                      const base = price || 0;
+                      // Base price is the sum of selected service prices. If no services selected via the
+                      // selection UI, fall back to the appointment's price or the price of its original service.
+                      let baseSum = 0;
+                      if (services && services.length > 0) {
+                        services.forEach((svc) => {
+                          if (selectedServices[svc.id]) {
+                            baseSum += svc.price || 0;
+                          }
+                        });
+                      }
+                      if (baseSum === 0) {
+                        baseSum = appointment?.price || appointment?.service?.price || 0;
+                      }
                       let extraTotal = 0;
                       Object.entries(selectedExtras).forEach(([id, sel]) => {
                         if (sel.selected) extraTotal += sel.amount;
                       });
-                      const total = base + extraTotal + (manualAdjustment || 0);
+                      const total = baseSum + extraTotal + (manualAdjustment || 0);
                       return total.toFixed(2);
                     })()}
                   </div>
@@ -588,21 +680,47 @@ export function AppointmentInfoModal({ appointment, open, onClose, canReschedule
                     <Button
                       onClick={async () => {
                         if (!appointment || !onComplete) return;
-                        // Compute final price and extras list
-                        let extraList: { id: string; amount: number }[] = [];
+                        // Gather selected extra charge reasons
+                        const extraList: { id: string; amount: number }[] = [];
                         Object.entries(selectedExtras).forEach(([id, sel]) => {
                           if (sel.selected) {
                             extraList.push({ id, amount: sel.amount });
                           }
                         });
-                        const base = price || 0;
-                        let extraTotal = 0;
+                        // Determine selected service IDs
+                        const selectedServiceIds: string[] = [];
+                        if (services && services.length > 0) {
+                          services.forEach((svc) => {
+                            if (selectedServices[svc.id]) {
+                              selectedServiceIds.push(svc.id);
+                            }
+                          });
+                        }
+                        // Compute base price as sum of selected services or fallback to appointment price
+                        let baseSum = 0;
+                        if (selectedServiceIds.length > 0) {
+                          services.forEach((svc) => {
+                            if (selectedServices[svc.id]) {
+                              baseSum += svc.price || 0;
+                            }
+                          });
+                        } else {
+                          baseSum = appointment.price || appointment.service?.price || 0;
+                        }
+                        // Sum of selected extras
+                        let extrasTotal = 0;
                         extraList.forEach((item) => {
-                          extraTotal += item.amount;
+                          extrasTotal += item.amount;
                         });
-                        const finalPrice = base + extraTotal + (manualAdjustment || 0);
+                        const finalPrice = baseSum + extrasTotal + (manualAdjustment || 0);
                         try {
-                          await onComplete(appointment.id, finalPrice, extraList, completionNote);
+                          await onComplete(
+                            appointment.id,
+                            selectedServiceIds,
+                            finalPrice,
+                            extraList,
+                            completionNote,
+                          );
                           setCompleting(false);
                           setManualAdjustment(0);
                           setCompletionNote('');

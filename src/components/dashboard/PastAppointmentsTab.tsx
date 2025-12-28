@@ -157,7 +157,11 @@ export default function PastAppointmentsTab({ appointments }: PastAppointmentsTa
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-foreground">
-                      €{apt.service?.price?.toFixed(2) || '0.00'}
+                      €{
+                        apt.price !== undefined && apt.price !== null
+                          ? (apt.price as number).toFixed(2)
+                          : apt.service?.price?.toFixed(2) || '0.00'
+                      }
                     </p>
                     <span
                       className={`inline-block px-2 py-0.5 text-xs rounded-full ${getStatusColor(

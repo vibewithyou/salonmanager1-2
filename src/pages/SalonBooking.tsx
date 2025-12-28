@@ -138,7 +138,35 @@ const SalonBooking = () => {
     } catch (e) {
       console.error('Error computing appointment sequence:', e);
     }
-    const appointmentNumber = `t${dateStr}${String(seq).padStart(5, '0')}`;
+    // Determine prefix from salon name and owner first name (lowercased initials)
+    let prefix = '';
+    try {
+      const { data: salonInfo } = await supabase
+        .from('salons')
+        .select('name, owner_id')
+        .eq('id', salonId)
+        .single();
+      if (salonInfo) {
+        const sName: string = (salonInfo as any).name || '';
+        let ownerFirst = '';
+        if ((salonInfo as any).owner_id) {
+          const { data: ownerProf } = await supabase
+            .from('profiles')
+            .select('first_name')
+            .eq('user_id', (salonInfo as any).owner_id)
+            .maybeSingle();
+          ownerFirst = ownerProf?.first_name || '';
+        }
+        const salonInitial = sName.trim()[0] || '';
+        const ownerInitial = ownerFirst.trim()[0] || '';
+        if (salonInitial) {
+          prefix = salonInitial.toLowerCase() + (ownerInitial ? ownerInitial.toLowerCase() : '');
+        }
+      }
+    } catch (err) {
+      console.error('Error computing prefix during booking:', err);
+    }
+    const appointmentNumber = `${prefix}t${dateStr}${String(seq).padStart(5, '0')}`;
 
     // Try to associate the appointment with an existing customer profile based on the email.
     let customerProfileId: string | null = null;
@@ -154,6 +182,18 @@ const SalonBooking = () => {
           customerProfileId = (existingProfile as any).id as string;
         }
       }
+      // Attempt lookup by phone if not found by email
+      if (!customerProfileId && data.guestPhone) {
+        const { data: existingByPhone, error: phoneErr } = await supabase
+          .from('customer_profiles')
+          .select('id')
+          .eq('salon_id', salonId)
+          .eq('phone', data.guestPhone)
+          .maybeSingle();
+        if (!phoneErr && existingByPhone && (existingByPhone as any).id) {
+          customerProfileId = (existingByPhone as any).id as string;
+        }
+      }
     } catch (lookupErr) {
       console.error('Error looking up existing customer profile', lookupErr);
     }
@@ -165,46 +205,25 @@ const SalonBooking = () => {
     // the createCustomer hook.
     if (!customerProfileId) {
       try {
-        // Determine prefix using first letters of salon name and owner first name
-        let customerPrefix = 'cu';
-        try {
-          const { data: salonInfo } = await supabase
-            .from('salons')
-            .select('name, owner_id')
-            .eq('id', salonId)
-            .single();
-          if (salonInfo) {
-            const sName: string = (salonInfo as any).name || '';
-            let ownerFirst = '';
-            if ((salonInfo as any).owner_id) {
-              const { data: ownerProf } = await supabase
-                .from('profiles')
-                .select('first_name')
-                .eq('user_id', (salonInfo as any).owner_id)
-                .maybeSingle();
-              ownerFirst = ownerProf?.first_name || '';
-            }
-            const salonInitial = sName.trim()[0] || '';
-            const ownerInitial = ownerFirst.trim()[0] || '';
-            if (salonInitial) {
-              customerPrefix = salonInitial.toLowerCase() + (ownerInitial ? ownerInitial.toLowerCase() : '');
-            }
-          }
-        } catch (err) {
-          console.error('Error computing customer prefix during booking:', err);
-        }
-        // Determine next sequence number for this salon
-        let nextSeq = 1;
+        // Determine next sequence number for this salon and date for customer
+        const today = new Date();
+        const startOfDay = new Date(today);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(startOfDay);
+        endOfDay.setDate(startOfDay.getDate() + 1);
+        let nextCustSeq = 1;
         try {
           const { count } = await supabase
             .from('customer_profiles')
             .select('*', { count: 'exact', head: true })
-            .eq('salon_id', salonId);
-          nextSeq = ((count ?? 0) + 1);
+            .eq('salon_id', salonId)
+            .gte('created_at', startOfDay.toISOString())
+            .lt('created_at', endOfDay.toISOString());
+          nextCustSeq = ((count ?? 0) + 1);
         } catch (err) {
-          console.error('Error computing customer sequence during booking:', err);
+          console.error('Error computing customer daily sequence during booking:', err);
         }
-        const customerNumber = `${customerPrefix}${String(nextSeq).padStart(10, '0')}`;
+        const customerNumber = `${prefix}${dateStr}${String(nextCustSeq).padStart(5, '0')}`;
         // Parse guest name into first and last names (naive split on first space)
         let firstName = data.guestName?.trim() || '';
         let lastName = '';

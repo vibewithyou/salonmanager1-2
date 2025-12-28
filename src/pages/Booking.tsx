@@ -135,6 +135,152 @@ const Booking = () => {
     const startTime = new Date(`${format(data.date, 'yyyy-MM-dd')}T${data.time}:00`);
     const endTime = new Date(startTime.getTime() + selectedServiceTotalDuration * 60000);
 
+    // Generate an appointment number using a prefix derived from the salon name and owner's first
+    // name. The format is `<prefix>tYYYYMMDDNNNNN` where `prefix` is the first letter of the
+    // salon name plus the first letter of the salon owner's first name (both lowercased),
+    // `t` indicates an appointment, `YYYYMMDD` is the appointment date, and `NNNNN` is a
+    // five‑digit sequence per salon and day. This ensures numbers are easy to read and
+    // non‑conflicting across salons.
+    const dateStr = format(startTime, 'yyyyMMdd');
+    // Determine the next sequence number for this salon and date
+    let seq = 1;
+    try {
+      const { count } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('salon_id', selectedSalon)
+        .gte('start_time', `${dateStr}T00:00:00`)
+        .lt('start_time', `${dateStr}T23:59:59`);
+      seq = ((count ?? 0) + 1);
+    } catch (e) {
+      console.error('Error computing appointment sequence during booking:', e);
+    }
+    // Compute prefix: first letter of salon name + first letter of salon owner's first name
+    let prefix = '';
+    try {
+      const { data: salonInfo } = await supabase
+        .from('salons')
+        .select('name, owner_id')
+        .eq('id', selectedSalon)
+        .single();
+      if (salonInfo) {
+        const salonName: string = (salonInfo as any).name || '';
+        let ownerFirst = '';
+        if ((salonInfo as any).owner_id) {
+          const { data: ownerProf } = await supabase
+            .from('profiles')
+            .select('first_name')
+            .eq('user_id', (salonInfo as any).owner_id)
+            .maybeSingle();
+          ownerFirst = ownerProf?.first_name || '';
+        }
+        const salonInitial = salonName.trim()[0] || '';
+        const ownerInitial = ownerFirst.trim()[0] || '';
+        if (salonInitial) {
+          prefix = salonInitial.toLowerCase() + (ownerInitial ? ownerInitial.toLowerCase() : '');
+        }
+      }
+    } catch (err) {
+      console.error('Error computing appointment prefix during booking:', err);
+    }
+    const appointmentNumber = `${prefix}t${dateStr}${String(seq).padStart(5, '0')}`;
+
+    // Attempt to find an existing customer profile by email for this salon
+    let customerProfileId: string | null = null;
+    try {
+      if (data.guestEmail) {
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('customer_profiles')
+          .select('id')
+          .eq('salon_id', selectedSalon)
+          .eq('email', data.guestEmail)
+          .maybeSingle();
+        if (!profileError && existingProfile && (existingProfile as any).id) {
+          customerProfileId = (existingProfile as any).id as string;
+        }
+      }
+      // If not found by email, attempt lookup by phone number
+      if (!customerProfileId && data.guestPhone) {
+        const { data: existingByPhone, error: phoneError } = await supabase
+          .from('customer_profiles')
+          .select('id')
+          .eq('salon_id', selectedSalon)
+          .eq('phone', data.guestPhone)
+          .maybeSingle();
+        if (!phoneError && existingByPhone && (existingByPhone as any).id) {
+          customerProfileId = (existingByPhone as any).id as string;
+        }
+      }
+    } catch (lookupErr) {
+      console.error('Error looking up existing customer profile during booking:', lookupErr);
+    }
+
+    // If no existing profile found, create a new customer profile.  The customer number
+    // follows the format `<prefix>YYYYMMDDNNNNN`, where `prefix` is the same two‑letter prefix
+    // used for appointments (first letter of salon name + first letter of owner), `YYYYMMDD`
+    // is the current date, and `NNNNN` is a five‑digit sequence for customers created on
+    // that day.  This ensures that customer numbers are unique per salon and day.
+    if (!customerProfileId) {
+      try {
+        // Compute the date string for the customer number using today's date
+        const custDateStr = format(new Date(), 'yyyyMMdd');
+        // Determine next sequence number for customers created on the current day for this salon
+        let nextCustSeq = 1;
+        try {
+          const startOfDay = new Date();
+          startOfDay.setHours(0, 0, 0, 0);
+          const endOfDay = new Date(startOfDay);
+          endOfDay.setDate(startOfDay.getDate() + 1);
+          const { count } = await supabase
+            .from('customer_profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('salon_id', selectedSalon)
+            .gte('created_at', startOfDay.toISOString())
+            .lt('created_at', endOfDay.toISOString());
+          nextCustSeq = ((count ?? 0) + 1);
+        } catch (err) {
+          console.error('Error computing customer daily sequence during booking:', err);
+        }
+        const customerNumber = `${prefix}${custDateStr}${String(nextCustSeq).padStart(5, '0')}`;
+        // Parse guest name into first and last names (naive split on first space)
+        let firstName = data.guestName?.trim() || '';
+        let lastName = '';
+        if (firstName) {
+          const parts = firstName.split(' ');
+          firstName = parts[0] || '';
+          lastName = parts.slice(1).join(' ') || '';
+        }
+        // Insert new customer profile
+        const { data: newProfile, error: createError } = await supabase
+          .from('customer_profiles')
+          .insert({
+            salon_id: selectedSalon,
+            user_id: null,
+            first_name: firstName,
+            last_name: lastName,
+            birthdate: null,
+            phone: data.guestPhone || null,
+            email: data.guestEmail || null,
+            street: null,
+            house_number: null,
+            postal_code: null,
+            city: null,
+            address: null,
+            image_urls: null,
+            notes: null,
+            customer_number: customerNumber,
+          })
+          .select()
+          .single();
+        if (!createError && newProfile && (newProfile as any).id) {
+          customerProfileId = (newProfile as any).id as string;
+        }
+      } catch (createErr) {
+        console.error('Error creating customer profile during booking:', createErr);
+      }
+    }
+
+    // Insert the appointment record, including appointment_number and customer_profile_id
     const { error } = await supabase.from('appointments').insert({
       salon_id: selectedSalon,
       service_id: selectedService,
@@ -152,6 +298,8 @@ const Booking = () => {
       // store buffer values on the appointment record to allow auditing
       buffer_before: selectedServiceData.buffer_before || 0,
       buffer_after: selectedServiceData.buffer_after || 0,
+      appointment_number: appointmentNumber,
+      customer_profile_id: customerProfileId,
     });
 
     setIsSubmitting(false);

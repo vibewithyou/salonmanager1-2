@@ -20,7 +20,16 @@ interface WeekCalendarProps {
 interface TimeBlock {
   startTime: string;
   endTime: string;
-  status: 'available' | 'booked' | 'absent' | 'closed';
+  /**
+   * Status of the block. A block can be:
+   * - 'available' when the slot is free and bookable
+   * - 'booked' when the slot already has an appointment
+   * - 'absent' when the stylist is on leave for the day
+   * - 'closed' when the salon is closed or service duration does not fit
+   * - 'past' when the date lies in the past. Past days cannot be booked and
+   *   should show a different label than closed days.
+   */
+  status: 'available' | 'booked' | 'absent' | 'closed' | 'past';
 }
 
 interface DaySchedule {
@@ -186,18 +195,39 @@ export function WeekCalendar({ salonId, selectedStylistId, serviceDuration, onSe
     const isOnLeave = isStylistOnLeave(date);
     const openingHours = getOpeningHours(date.getDay());
     
-    // If day is past, closed, or no opening hours
-    if (isPast || isClosed || !openingHours) {
+    // If the day lies in the past, return a special block with status 'past'.
+    // Past days are treated separately from closed days so that the UI can show
+    // "Vergangenheit" instead of "geschlossen".
+    if (isPast) {
       return {
         date,
         isOpen: false,
         openTime: null,
         closeTime: null,
-        blocks: [{
-          startTime: '00:00',
-          endTime: '24:00',
-          status: 'closed',
-        }],
+        blocks: [
+          {
+            startTime: '00:00',
+            endTime: '24:00',
+            status: 'past',
+          },
+        ],
+      };
+    }
+
+    // If salon is closed on this date or no opening hours configured, mark as closed
+    if (isClosed || !openingHours) {
+      return {
+        date,
+        isOpen: false,
+        openTime: null,
+        closeTime: null,
+        blocks: [
+          {
+            startTime: '00:00',
+            endTime: '24:00',
+            status: 'closed',
+          },
+        ],
       };
     }
     
@@ -438,6 +468,10 @@ export function WeekCalendar({ salonId, selectedStylistId, serviceDuration, onSe
           <div className="w-3 h-3 rounded bg-muted/30 border border-border" />
           <span className="text-muted-foreground">{t('booking.closed')}</span>
         </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded bg-muted/50 border border-border" />
+          <span className="text-muted-foreground">{t('booking.past')}</span>
+        </div>
       </div>
 
       {/* Service Duration Info */}
@@ -475,7 +509,8 @@ export function WeekCalendar({ salonId, selectedStylistId, serviceDuration, onSe
                 )}
                 {!day.isOpen && !day.openTime && (
                   <div className="text-[10px] text-destructive font-medium">
-                    {t('booking.closed')}
+                    {/* Show 'Past' instead of 'Closed' for past dates */}
+                    {isBefore(day.date, today) ? t('booking.past') : t('booking.closed')}
                   </div>
                 )}
               </div>
@@ -501,6 +536,7 @@ export function WeekCalendar({ salonId, selectedStylistId, serviceDuration, onSe
                         'booked': 'bg-muted/50 border-l-2 border-l-muted-foreground/50',
                         'absent': 'bg-amber-500/20 border-l-2 border-l-amber-500',
                         'closed': 'bg-muted/30',
+                        'past': 'bg-muted/30',
                       }[block.status];
                       
                       return (
@@ -528,6 +564,12 @@ export function WeekCalendar({ salonId, selectedStylistId, serviceDuration, onSe
                           {block.status === 'absent' && (
                             <span className="text-amber-600">{t('booking.absent')}</span>
                           )}
+                        {block.status === 'past' && (
+                          <span className="text-muted-foreground">{t('booking.past')}</span>
+                        )}
+                        {block.status === 'closed' && (
+                          <span className="text-muted-foreground">{t('booking.closed')}</span>
+                        )}
                         </button>
                       );
                     })}
@@ -535,7 +577,12 @@ export function WeekCalendar({ salonId, selectedStylistId, serviceDuration, onSe
                 ) : (
                   <div className="h-full flex items-center justify-center">
                     <span className="text-xs text-muted-foreground">
-                      {isStylistOnLeave(day.date) ? t('booking.absent') : t('booking.closed')}
+                      {/* Show 'Past' when the date lies in the past. Otherwise, show absent or closed. */}
+                      {isBefore(day.date, today)
+                        ? t('booking.past')
+                        : isStylistOnLeave(day.date)
+                          ? t('booking.absent')
+                          : t('booking.closed')}
                     </span>
                   </div>
                 )}

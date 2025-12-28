@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from './lib/queryClient';
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -24,9 +25,9 @@ import NotFound from "./pages/NotFound";
 import EmployeeInvite from "./pages/EmployeeInvite";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import NewAppointment from "./pages/NewAppointment";
 import ConsentManager from '@/components/ConsentManager';
 
-const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -61,6 +62,8 @@ const App = () => (
               <Route path="/closures" element={<ClosuresPage />} />
               <Route path="/booking" element={<Booking />} />
               <Route path="/salon/:salonId" element={<SalonBooking />} />
+          {/* Internal route to create a new appointment for a specific customer. Accessible to logged-in staff only. */}
+          <Route path="/new-appointment/:customerId" element={<NewAppointment />} />
               {/* Invite page for employees to set their password after accepting an invitation */}
               <Route path="/employee-invite" element={<EmployeeInvite />} />
               {/* Dedicated profile page for all user roles */}
