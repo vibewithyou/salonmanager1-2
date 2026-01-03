@@ -1550,6 +1550,49 @@ export type Database = {
           rating: number | null
           reviews_count: number | null
           categories: string[] | null
+          /** Minimum price among the salon's active services, or null if none */
+          min_price: number | null
+          /** Maximum price among the salon's active services, or null if none */
+          max_price: number | null
+        }[]
+      }
+
+      /**
+       * Returns all active and publicly bookable salons within a given radius of a
+       * coordinate and applies additional optional filters.  The results are
+       * filtered server‑side by minimum rating, price range, categories and
+       * availability within a time window.  If a filter parameter is null or
+       * undefined, it is ignored.  Distance is calculated using PostGIS
+       * geography types and returned in meters.
+       */
+      salons_within_radius_filtered: {
+        Args: {
+          p_lat: number
+          p_lon: number
+          p_radius: number
+          p_min_rating?: number | null
+          p_min_price?: number | null
+          p_max_price?: number | null
+          p_categories?: string[] | null
+          p_start?: string | null
+          p_end?: string | null
+        }
+        Returns: {
+          id: string
+          name: string
+          address: string
+          city: string
+          postal_code: string
+          latitude: number | null
+          longitude: number | null
+          distance: number
+          rating: number | null
+          reviews_count: number | null
+          categories: string[] | null
+          /** Minimum price among the salon's active services, or null if none */
+          min_price: number | null
+          /** Maximum price among the salon's active services, or null if none */
+          max_price: number | null
         }[]
       }
     }

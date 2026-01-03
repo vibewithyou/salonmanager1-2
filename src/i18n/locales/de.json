@@ -606,6 +606,21 @@
     ,"mapViewTitle": "Salonkarte"
     ,"mapViewDescription": "Diese Seite zeigt Salons in Ihrer Nähe auf einer interaktiven Karte."
     ,"noSalonsNearby": "Keine Salons in der Nähe gefunden."
+    ,"youAreHere": "Sie sind hier"
+    ,"bookHere": "Hier buchen"
+    ,"filter": "Filter"
+    ,"filterRating": "Mindestbewertung"
+    ,"filterPrice": "Preisspanne (€)"
+    ,"filterCategories": "Kategorien"
+    ,"filterDistance": "Entfernung (km)"
+    ,"resetFilters": "Filter zurücksetzen"
+    ,"noCategories": "Keine Kategorien"
+    ,"filterTime": "Nächster Termin"
+    ,"timeAny": "Beliebig"
+    ,"timeNextHour": "Nächste Stunde"
+    ,"timeToday": "Heute"
+    ,"timeThisWeek": "Diese Woche"
+    ,"timeNext2Weeks": "Nächste 2 Wochen"
   },
   "pos": {
     "terminal": "Kasse",

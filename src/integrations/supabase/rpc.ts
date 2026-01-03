@@ -28,6 +28,56 @@ export async function getSalonsWithinRadius(
 }
 
 /**
+ * Fetch salons within a given radius of a coordinate using server‑side filters.
+ * This RPC applies optional filters for minimum rating, price range,
+ * categories and availability.  If a filter value is undefined or null,
+ * it is ignored. See the SQL definition of `salons_within_radius_filtered`
+ * for full details.  Radius is in meters.
+ *
+ * @param lat - Latitude of the centre point
+ * @param lon - Longitude of the centre point
+ * @param radius - Maximum distance in meters
+ * @param options - Optional filtering parameters
+ */
+export async function getSalonsWithinRadiusFiltered(
+  lat: number,
+  lon: number,
+  radius: number,
+  options: {
+    minRating?: number | null;
+    minPrice?: number | null;
+    maxPrice?: number | null;
+    categories?: string[] | null;
+    start?: string | null;
+    end?: string | null;
+  } = {}
+): Promise<{
+  data: Database['public']['Functions']['salons_within_radius_filtered']['Returns'] | null;
+  error: any;
+}> {
+  const {
+    minRating = null,
+    minPrice = null,
+    maxPrice = null,
+    categories = null,
+    start = null,
+    end = null,
+  } = options;
+  const { data, error } = await supabase.rpc('salons_within_radius_filtered', {
+    p_lat: lat,
+    p_lon: lon,
+    p_radius: radius,
+    p_min_rating: minRating,
+    p_min_price: minPrice,
+    p_max_price: maxPrice,
+    p_categories: categories,
+    p_start: start,
+    p_end: end,
+  });
+  return { data: data as any, error };
+}
+
+/**
  * Check if a salon has at least one free appointment slot within a time range.
  * Requires the `has_free_slot` function in the database. Returns a boolean.
  *

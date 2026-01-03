@@ -551,6 +551,21 @@
     ,"mapViewTitle": "Salon Map"
     ,"mapViewDescription": "This page will show salons near you on an interactive map."
     ,"noSalonsNearby": "No salons found nearby."
+    ,"youAreHere": "You are here"
+    ,"bookHere": "Book here"
+    ,"filter": "Filters"
+    ,"filterRating": "Minimum rating"
+    ,"filterPrice": "Price range (€)"
+    ,"filterCategories": "Categories"
+    ,"filterDistance": "Distance (km)"
+    ,"resetFilters": "Reset filters"
+    ,"noCategories": "No categories"
+    ,"filterTime": "Next slot"
+    ,"timeAny": "Any time"
+    ,"timeNextHour": "Next hour"
+    ,"timeToday": "Today"
+    ,"timeThisWeek": "This week"
+    ,"timeNext2Weeks": "Next 2 weeks"
   },
   "pos": {
     "terminal": "POS",
