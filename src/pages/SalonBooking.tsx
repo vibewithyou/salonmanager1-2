@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,12 @@ import { de, enUS } from "date-fns/locale";
 const SalonBooking = () => {
   const { t, i18n } = useTranslation();
   const { salonId } = useParams<{ salonId: string }>();
+  // Read query parameters to allow pre‑filtering of services.  The map page passes
+  // selected categories via a comma‑separated list in the `categories` query param.
+  const [searchParams] = useSearchParams();
+  const categoriesParam = searchParams.get('categories');
+  // Split categories into an array; if undefined, default to an empty array.
+  const filterCategories = categoriesParam ? categoriesParam.split(',').map((c) => decodeURIComponent(c)) : [];
   const locale = i18n.language === 'de' ? de : enUS;
   
   const [step, setStep] = useState(1);
@@ -71,6 +77,13 @@ const SalonBooking = () => {
     enabled: !!salonId,
   });
 
+  // Filter services based on categories passed via query params.  If one or more
+  // categories were provided, only services whose category matches one of the
+  // provided categories will be displayed.  Otherwise all services are shown.
+  const filteredServices = filterCategories.length > 0
+    ? services.filter((service: any) => service.category && filterCategories.includes(service.category))
+    : services;
+
   // Fetch employees for this salon - using display_name directly
   const { data: employees = [] } = useQuery({
     queryKey: ['employees-booking', salonId],
@@ -87,7 +100,9 @@ const SalonBooking = () => {
     enabled: !!salonId,
   });
 
-  const selectedServiceData = services.find((s: any) => s.id === selectedService);
+  // Use the filtered list when resolving the selected service so that a service
+  // removed by filtering cannot be selected inadvertently.
+  const selectedServiceData = filteredServices.find((s: any) => s.id === selectedService);
   const selectedEmployeeData = employees.find((e: any) => e.id === selectedStylist);
 
   // Get stylist display name
@@ -429,14 +444,14 @@ const SalonBooking = () => {
                 <h2 className="text-2xl font-display font-bold mb-2">{t('booking.selectService')}</h2>
                 <p className="text-muted-foreground">{t('booking.whatToBook')}</p>
               </div>
-              {services.length === 0 ? (
+              {filteredServices.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>{t('booking.noServices')}</p>
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
-                  {services.map((service: any) => (
+                  {filteredServices.map((service: any) => (
                     <button
                       key={service.id}
                       onClick={() => setSelectedService(service.id)}
@@ -467,7 +482,7 @@ const SalonBooking = () => {
                 </div>
               )}
               {/* Price disclaimer note */}
-              {services.length > 0 && (
+              {filteredServices.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-2">
                   * {t('booking.priceDisclaimer', 'Prices may vary depending on products and effort.')}
                 </p>

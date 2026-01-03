@@ -566,6 +566,8 @@
     ,"timeToday": "Today"
     ,"timeThisWeek": "This week"
     ,"timeNext2Weeks": "Next 2 weeks"
+    ,"salonsFound": "{{count}} salon found"
+    ,"salonsFound_plural": "{{count}} salons found"
   },
   "pos": {
     "terminal": "POS",

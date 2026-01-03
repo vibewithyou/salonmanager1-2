@@ -621,6 +621,8 @@
     ,"timeToday": "Heute"
     ,"timeThisWeek": "Diese Woche"
     ,"timeNext2Weeks": "Nächste 2 Wochen"
+    ,"salonsFound": "{{count}} Salon gefunden"
+    ,"salonsFound_plural": "{{count}} Salons gefunden"
   },
   "pos": {
     "terminal": "Kasse",
