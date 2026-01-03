@@ -568,6 +568,12 @@
     ,"timeNext2Weeks": "Next 2 weeks"
     ,"salonsFound": "{{count}} salon found"
     ,"salonsFound_plural": "{{count}} salons found"
+    ,"geoError": "Unable to access your location."
+    ,"geoPrompt": "Please enter your address to find salons near you."
+    ,"enterAddress": "Enter address"
+    ,"searchAddress": "Search"
+    ,"addressNotFound": "Address not found."
+    ,"clusterMultiple": "{{count}} salons in this area"
   },
   "pos": {
     "terminal": "POS",

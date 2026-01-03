@@ -623,6 +623,12 @@
     ,"timeNext2Weeks": "Nächste 2 Wochen"
     ,"salonsFound": "{{count}} Salon gefunden"
     ,"salonsFound_plural": "{{count}} Salons gefunden"
+    ,"geoError": "Ihr Standort kann nicht abgerufen werden."
+    ,"geoPrompt": "Bitte geben Sie Ihre Adresse ein, um Salons in Ihrer Nähe zu finden."
+    ,"enterAddress": "Adresse eingeben"
+    ,"searchAddress": "Suchen"
+    ,"addressNotFound": "Adresse nicht gefunden."
+    ,"clusterMultiple": "{{count}} Salons in diesem Bereich"
   },
   "pos": {
     "terminal": "Kasse",
