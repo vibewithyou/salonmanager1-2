@@ -21,6 +21,7 @@ import SchedulePage from "./pages/SchedulePage";
 import ClosuresPage from "./pages/ClosuresPage";
 import Booking from "./pages/Booking";
 import SalonBooking from "./pages/SalonBooking";
+import BookingMap from "./pages/BookingMap";
 import NotFound from "./pages/NotFound";
 import EmployeeInvite from "./pages/EmployeeInvite";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -61,6 +62,8 @@ const App = () => (
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/closures" element={<ClosuresPage />} />
               <Route path="/booking" element={<Booking />} />
+            {/* New map-based booking page */}
+            <Route path="/booking-map" element={<BookingMap />} />
               <Route path="/salon/:salonId" element={<SalonBooking />} />
           {/* Internal route to create a new appointment for a specific customer. Accessible to logged-in staff only. */}
           <Route path="/new-appointment/:customerId" element={<NewAppointment />} />

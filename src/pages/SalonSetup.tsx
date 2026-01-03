@@ -67,8 +67,47 @@ const SalonSetup = () => {
     if (!user) return;
     setLoading(true);
 
+    // Combine address fields into a single query string for geocoding. We append
+    // street/house number, postal code and city to improve accuracy. If the
+    // geocoding service fails, we gracefully continue without coordinates.
+    const fullAddress = `${formData.address}, ${formData.postal_code} ${formData.city}`;
+
+    // Helper to fetch coordinates from a geocoding API (OpenStreetMap Nominatim).
+    // Returns null if no result is found or the request fails.
+    async function geocode(address: string): Promise<{ latitude: number; longitude: number } | null> {
+      try {
+        const params = new URLSearchParams({ q: address, format: 'json', limit: '1' });
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+          // Note: User-Agent header cannot be set from the browser, but Nominatim
+          // still accepts requests from client-side apps. For production use,
+          // consider proxying this request through your backend to add a
+          // custom User-Agent as recommended by the Nominatim policy.
+          headers: {
+            'Accept-Language': i18n.language || 'de'
+          }
+        });
+        const data = (await response.json()) as any[];
+        if (data && data.length > 0) {
+          const result = data[0];
+          return {
+            latitude: parseFloat(result.lat),
+            longitude: parseFloat(result.lon)
+          };
+        }
+      } catch (err) {
+        console.error('Geocoding error:', err);
+      }
+      return null;
+    }
+
     try {
-      // Use the secure RPC function to create salon and upgrade role
+      // First attempt to geocode the address. This is done outside of the RPC so
+      // that we can still create the salon if geocoding fails. The returned
+      // coordinates (if any) will be saved after the salon is created.
+      const coords = await geocode(fullAddress);
+
+      // Use the secure RPC function to create salon and upgrade role. This
+      // returns the newly created salon's ID.
       const { data: salonId, error } = await supabase.rpc('create_salon_with_owner', {
         p_name: formData.name,
         p_description: formData.description || null,
@@ -79,6 +118,20 @@ const SalonSetup = () => {
         p_email: formData.email || null,
         p_opening_hours: openingHours,
       });
+
+      // If the salon was created successfully and we have coordinates, update
+      // the latitude and longitude columns on the salon record. The new
+      // columns were added in a previous step. This update is separate from
+      // the RPC to keep the RPC signature unchanged.
+      if (!error && salonId && coords) {
+        const { error: updateError } = await supabase
+          .from('salons')
+          .update({ latitude: coords.latitude, longitude: coords.longitude })
+          .eq('id', salonId as unknown as string);
+        if (updateError) {
+          console.error('Error saving coordinates:', updateError);
+        }
+      }
 
       if (error) throw error;
 

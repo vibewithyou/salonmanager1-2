@@ -602,6 +602,10 @@
     ,"disabledTitle": "Terminbuchung nicht verfügbar"
     ,"disabledMessage": "Dieser Salon nimmt derzeit keine Online-Buchungen entgegen. Bitte kontaktieren Sie den Salon direkt, um einen Termin zu vereinbaren."
     ,"priceDisclaimer": "Die Preise können je nach verwendeten Produkten und Aufwand variieren."
+    ,"mapView": "Karte"
+    ,"mapViewTitle": "Salonkarte"
+    ,"mapViewDescription": "Diese Seite zeigt Salons in Ihrer Nähe auf einer interaktiven Karte."
+    ,"noSalonsNearby": "Keine Salons in der Nähe gefunden."
   },
   "pos": {
     "terminal": "Kasse",

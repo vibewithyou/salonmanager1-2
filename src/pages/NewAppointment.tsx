@@ -5,11 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { WeekCalendar } from '@/components/booking/WeekCalendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Calendar, Clock, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { format } from 'date-fns';
 
 /**
@@ -259,120 +258,232 @@ const NewAppointment = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-background container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-display font-bold mb-4">
-        {t('booking.newAppointmentFor', { name: `${customer.first_name} ${customer.last_name}` }, `Neuen Termin für ${customer.first_name} ${customer.last_name}`)}
-      </h1>
-      {step === 1 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-display font-medium">{t('booking.service')}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {services.map((svc: any) => (
-              <Card
-                key={svc.id}
-                className={`cursor-pointer border ${selectedService === svc.id ? 'border-primary' : 'border-border'}`}
-                onClick={() => setSelectedService(svc.id)}
-              >
-                <CardHeader>
-                  <CardTitle>{svc.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{svc.description || '-'}</p>
-                  <p className="mt-2 font-medium">€{svc.price.toFixed(2)}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button disabled={!selectedService} onClick={() => setStep(2)}>
-              {t('common.next', 'Weiter')}
-            </Button>
-          </div>
-        </div>
-      )}
-      {step === 2 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-display font-medium">{t('booking.stylist')}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {/* Option for any stylist */}
-            <Card
-              key="any"
-              className={`cursor-pointer border ${selectedStylist === 'any' ? 'border-primary' : 'border-border'}`}
-              onClick={() => setSelectedStylist('any')}
-            >
-              <CardHeader>
-                <CardTitle>{t('booking.anyStylist')}</CardTitle>
-              </CardHeader>
-            </Card>
-            {employees.map((emp: any) => (
-              <Card
-                key={emp.id}
-                className={`cursor-pointer border ${selectedStylist === emp.id ? 'border-primary' : 'border-border'}`}
-                onClick={() => setSelectedStylist(emp.id)}
-              >
-                <CardHeader>
-                  <CardTitle>{emp.display_name}</CardTitle>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-          <div className="flex justify-between gap-2 mt-4">
-            <Button variant="outline" onClick={() => setStep(1)}>
-              {t('common.back', 'Zurück')}
-            </Button>
-            <Button disabled={!selectedStylist} onClick={() => setStep(3)}>
-              {t('common.next', 'Weiter')}
-            </Button>
-          </div>
-        </div>
-      )}
-      {step === 3 && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-display font-medium">{t('booking.appointment')}</h2>
-          {/* Week calendar for selecting date/time */}
-          {selectedServiceData && (
-            <WeekCalendar
-              salonId={salonId}
-              selectedStylistId={selectedStylist}
-              serviceDuration={totalDuration}
-              onSelectSlot={handleSlotSelect}
-            />
-          )}
-          <div className="flex justify-between gap-2 mt-4">
-            <Button variant="outline" onClick={() => setStep(2)}>
-              {t('common.back', 'Zurück')}
-            </Button>
-            {/* Continue button disabled since selection occurs via calendar */}
-            <Button disabled>{t('common.next', 'Weiter')}</Button>
-          </div>
-        </div>
-      )}
-      {/* Confirmation modal for step 4 */}
-      <Dialog open={showConfirmModal} onOpenChange={(isOpen) => !isOpen && setShowConfirmModal(false)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('booking.confirmAppointment', 'Termin bestätigen')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p>{t('booking.service')}: {selectedServiceData?.name}</p>
-            <p>{t('booking.stylist')}: {selectedStylist === 'any' ? t('booking.anyStylist') : employees.find((e: any) => e.id === selectedStylist)?.display_name}</p>
-            <p>{t('booking.date')}: {selectedDate ? format(selectedDate, 'dd.MM.yyyy') : ''}</p>
-            <p>{t('booking.time')}: {selectedTime}</p>
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="notes">
-                {t('booking.notes', 'Notizen')}
-              </label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('booking.addNote', 'Notiz hinzufügen')} />
+    <div className="min-h-screen bg-background">
+      <main className="container px-4 py-8 max-w-4xl mx-auto">
+        {/* Header with Customer Name */}
+        <h1 className="text-2xl font-display font-bold mb-6">
+          {t('booking.newAppointmentFor', { name: `${customer.first_name} ${customer.last_name}` }, `Neuen Termin für ${customer.first_name} ${customer.last_name}`)}
+        </h1>
+        {/* Progress Steps */}
+        {(() => {
+          const steps = [
+            { num: 1, label: t('booking.service') },
+            { num: 2, label: t('booking.stylist') },
+            { num: 3, label: t('booking.appointment') },
+            { num: 4, label: t('booking.confirmAppointment', 'Bestätigen') },
+          ];
+          return (
+            <div className="flex items-center justify-center mb-12">
+              {steps.map((s, i) => (
+                <div key={s.num} className="flex items-center">
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
+                      step >= s.num 
+                        ? 'gradient-primary text-primary-foreground shadow-glow' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {step > s.num ? <Check className="w-5 h-5" /> : s.num}
+                    </div>
+                    <span className={`text-xs mt-2 ${step >= s.num ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {s.label}
+                    </span>
+                  </div>
+                  {i < steps.length - 1 && (
+                    <div className={`w-16 h-0.5 mx-2 ${step > s.num ? 'bg-primary' : 'bg-border'}`} />
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
-          <DialogFooter className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>{t('common.cancel', 'Abbrechen')}</Button>
-            <Button onClick={handleConfirm} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('booking.confirm', 'Bestätigen')}
+          );
+        })()}
+        {/* Step Content */}
+        <div className="animate-fade-in">
+          {/* Step 1: Service Selection */}
+          {step === 1 && (
+            <div className="space-y-6">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-display font-bold mb-2">{t('booking.selectService')}</h2>
+                <p className="text-muted-foreground">{t('booking.whatToBook')}</p>
+              </div>
+              {services.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>{t('booking.noServices')}</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {services.map((svc: any) => (
+                    <button
+                      key={svc.id}
+                      onClick={() => setSelectedService(svc.id)}
+                      className={`p-6 rounded-2xl border text-left transition-all ${
+                        selectedService === svc.id
+                          ? 'border-primary bg-primary/5 shadow-lg'
+                          : 'border-border bg-card hover:border-primary/50'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-3">
+                        {svc.category && (
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
+                            {svc.category}
+                          </span>
+                        )}
+                        <span className="text-lg font-bold text-primary">€{svc.price.toFixed(2)}*</span>
+                      </div>
+                      <h3 className="font-semibold text-lg text-foreground mb-1">{svc.name}</h3>
+                      {svc.description && (
+                        <p className="text-sm text-muted-foreground mb-2">{svc.description}</p>
+                      )}
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span className="text-sm">{svc.duration_minutes} Min</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {services.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  * {t('booking.priceDisclaimer', 'Prices may vary depending on products and effort.')}
+                </p>
+              )}
+            </div>
+          )}
+          {/* Step 2: Stylist Selection */}
+          {step === 2 && (
+            <div className="space-y-6">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-display font-bold mb-2">{t('booking.selectStylist')}</h2>
+                <p className="text-muted-foreground">{t('booking.orLetUsChoose')}</p>
+              </div>
+              <button
+                onClick={() => setSelectedStylist('any')}
+                className={`w-full p-6 rounded-2xl border text-left transition-all mb-4 ${
+                  selectedStylist === 'any'
+                    ? 'border-primary bg-primary/5 shadow-lg'
+                    : 'border-border bg-card hover:border-primary/50'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-semibold">
+                    ?
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg text-foreground">{t('booking.anyAvailable')}</h3>
+                    <p className="text-muted-foreground">{t('booking.weChooseBest')}</p>
+                  </div>
+                </div>
+              </button>
+              {employees.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-3">
+                  {employees.map((employee: any) => {
+                    const displayName = employee.display_name || t('booking.stylist');
+                    const initials = displayName
+                      .split(' ')
+                      .map((n: string) => n[0])
+                      .join('')
+                      .toUpperCase() || 'SM';
+                    return (
+                      <button
+                        key={employee.id}
+                        onClick={() => setSelectedStylist(employee.id)}
+                        className={`p-6 rounded-2xl border text-center transition-all ${
+                          selectedStylist === employee.id
+                            ? 'border-primary bg-primary/5 shadow-lg'
+                            : 'border-border bg-card hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="w-16 h-16 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center text-xl font-semibold text-secondary-foreground">
+                          {initials}
+                        </div>
+                        <h3 className="font-semibold text-foreground">{displayName}</h3>
+                        {employee.position && (
+                          <p className="text-sm text-muted-foreground">{employee.position}</p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground">{t('booking.selectAnyAvailable')}</p>
+              )}
+            </div>
+          )}
+          {/* Step 3: Calendar Selection */}
+          {step === 3 && (
+            <div className="space-y-6">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-display font-bold mb-2">{t('booking.selectDateTime')}</h2>
+                <p className="text-muted-foreground">{t('booking.clickToBook')}</p>
+              </div>
+              {selectedServiceData && (
+                <WeekCalendar
+                  salonId={salonId}
+                  selectedStylistId={selectedStylist}
+                  serviceDuration={totalDuration}
+                  onSelectSlot={handleSlotSelect}
+                />
+              )}
+            </div>
+          )}
+        </div>
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-12">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (step === 1) {
+                navigate(-1);
+              } else {
+                setStep(step - 1);
+              }
+            }}
+            className="gap-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            {t('common.back')}
+          </Button>
+          {step < 3 && (
+            <Button
+              onClick={() => setStep(step + 1)}
+              disabled={
+                (step === 1 && !selectedService) ||
+                (step === 2 && !selectedStylist)
+              }
+              className="gap-2"
+            >
+              {t('common.next')}
+              <ChevronRight className="w-4 h-4" />
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+        </div>
+        {/* Confirmation modal for step 4 */}
+        <Dialog open={showConfirmModal} onOpenChange={(isOpen) => !isOpen && setShowConfirmModal(false)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t('booking.confirmAppointment', 'Termin bestätigen')}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p>{t('booking.service')}: {selectedServiceData?.name}</p>
+              <p>{t('booking.stylist')}: {selectedStylist === 'any' ? t('booking.anyStylist') : employees.find((e: any) => e.id === selectedStylist)?.display_name}</p>
+              <p>{t('booking.date')}: {selectedDate ? format(selectedDate, 'dd.MM.yyyy') : ''}</p>
+              <p>{t('booking.time')}: {selectedTime}</p>
+              <div>
+                <label className="block text-sm font-medium mb-1" htmlFor="notes">
+                  {t('booking.notes', 'Notizen')}
+                </label>
+                <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('booking.addNote', 'Notiz hinzufügen')} />
+              </div>
+            </div>
+            <DialogFooter className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setShowConfirmModal(false)}>{t('common.cancel', 'Abbrechen')}</Button>
+              <Button onClick={handleConfirm} disabled={isSubmitting}>
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('booking.confirm', 'Bestätigen')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
     </div>
   );
 };

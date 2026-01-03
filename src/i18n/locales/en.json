@@ -547,6 +547,10 @@
     ,"disabledTitle": "Booking unavailable"
     ,"disabledMessage": "This salon currently does not accept online bookings. Please contact the salon directly to make an appointment."
     ,"priceDisclaimer": "Prices may vary depending on products and effort."
+    ,"mapView": "Map"
+    ,"mapViewTitle": "Salon Map"
+    ,"mapViewDescription": "This page will show salons near you on an interactive map."
+    ,"noSalonsNearby": "No salons found nearby."
   },
   "pos": {
     "terminal": "POS",

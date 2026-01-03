@@ -386,6 +386,12 @@ const Booking = () => {
           {/* Step 1: Salon Selection */}
           {step === 1 && (
             <div className="space-y-6">
+              {/* Link to the map-based booking page */}
+              <div className="flex justify-end">
+                <Link to="/booking-map" className="text-sm underline inline-flex items-center gap-1">
+                  <MapPin className="w-4 h-4" /> {t('booking.mapView', { defaultValue: 'Map' })}
+                </Link>
+              </div>
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-display font-bold mb-2">{t('booking.selectSalon')}</h1>
                 <p className="text-muted-foreground">{t('booking.whereToBbook')}</p>

@@ -713,6 +713,31 @@ export type Database = {
            * "14:00", closed: false } }). Null when no special hours are set.
            */
           special_opening_hours: Json | null
+          /**
+           * Latitude of the salon location for geospatial queries. May be null
+           * if the salon has not provided coordinate data yet.
+           */
+          latitude: number | null
+          /**
+           * Longitude of the salon location for geospatial queries. May be null
+           * if the salon has not provided coordinate data yet.
+           */
+          longitude: number | null
+          /**
+           * Average customer rating for the salon. Used for filtering and sorting
+           * in the map view. Defaults to 0 when no reviews are present.
+           */
+          rating: number | null
+          /**
+           * Number of reviews that contribute to the rating. Helps calculate
+           * average rating and filter by review count. Defaults to 0.
+           */
+          reviews_count: number | null
+          /**
+           * Categories assigned to the salon (e.g. 'Balayage', 'Barbier').
+           * Used for filtering salons by service categories on the map.
+           */
+          categories: string[] | null
           updated_at: string
         }
         Insert: {
@@ -739,6 +764,26 @@ export type Database = {
           booking_enabled?: boolean | null
           /** See Row.special_opening_hours */
           special_opening_hours?: Json | null
+          /**
+           * See Row.latitude
+           */
+          latitude?: number | null
+          /**
+           * See Row.longitude
+           */
+          longitude?: number | null
+          /**
+           * See Row.rating
+           */
+          rating?: number | null
+          /**
+           * See Row.reviews_count
+           */
+          reviews_count?: number | null
+          /**
+           * See Row.categories
+           */
+          categories?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -765,6 +810,26 @@ export type Database = {
           booking_enabled?: boolean | null
           /** See Row.special_opening_hours */
           special_opening_hours?: Json | null
+          /**
+           * See Row.latitude
+           */
+          latitude?: number | null
+          /**
+           * See Row.longitude
+           */
+          longitude?: number | null
+          /**
+           * See Row.rating
+           */
+          rating?: number | null
+          /**
+           * See Row.reviews_count
+           */
+          reviews_count?: number | null
+          /**
+           * See Row.categories
+           */
+          categories?: string[] | null
           updated_at?: string
         }
         Relationships: []
@@ -1442,6 +1507,50 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+
+      /**
+       * Checks whether there is at least one free appointment slot for a salon
+       * in a given time range. The implementation inspects employee work
+       * schedules and existing appointments to determine if any employee has
+       * availability between the provided start and end timestamps. Returns
+       * true if at least one slot is available, otherwise false.
+       */
+      has_free_slot: {
+        Args: {
+          p_salon_id: string
+          p_start: string
+          p_end: string
+        }
+        Returns: boolean
+      }
+
+      /**
+       * Returns all active and publicly bookable salons within a given radius
+       * of a latitude/longitude coordinate. Distance is calculated using
+       * PostGIS geography types so the result is in meters. Only salons with
+       * non‑null coordinates, booking_enabled = true and is_active = true are
+       * considered.
+       */
+      salons_within_radius: {
+        Args: {
+          p_lat: number
+          p_lon: number
+          p_radius: number
+        }
+        Returns: {
+          id: string
+          name: string
+          address: string
+          city: string
+          postal_code: string
+          latitude: number | null
+          longitude: number | null
+          distance: number
+          rating: number | null
+          reviews_count: number | null
+          categories: string[] | null
+        }[]
       }
     }
     Enums: {
