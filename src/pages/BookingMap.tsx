@@ -66,7 +66,9 @@ const BookingMap = () => {
 
   // Distance filter in kilometers. Changing this value will trigger a re-fetch
   // of salons within the specified radius.
-  const [maxDistance, setMaxDistance] = useState<number>(5);
+  // Distance filter in kilometers.  Increase the default to 20km and allow
+  // users to select up to 200km so that salons in distant cities can be visible.
+  const [maxDistance, setMaxDistance] = useState<number>(20);
 
   // Filter state variables
   const [minRating, setMinRating] = useState<number>(0);
@@ -357,7 +359,8 @@ const BookingMap = () => {
       {!loading && error && <p className="text-destructive">{error}</p>}
 
       {/* Filter bar */}
-      {!loading && !error && allSalons && allSalons.length > 0 && (
+      {/* Display the filter interface whenever we have a location (center) and the component is not loading or in error.  Even if no salons are currently found within the search radius, the user can adjust filters and distance to discover salons further away. */}
+      {!loading && !error && center && (
         <>
           {/* Mobile filters: Drawer button and content */}
           <div className="mb-4 md:hidden">
@@ -431,14 +434,14 @@ const BookingMap = () => {
                     <Label className="block mb-1">{t('booking.filterDistance', { defaultValue: 'Distance (km)' })}</Label>
                     <Slider
                       min={1}
-                      max={20}
+                      max={200}
                       step={1}
                       value={[maxDistance] as any}
                       onValueChange={(val: number[]) => setMaxDistance(val[0])}
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>{1}</span>
-                      <span>{20}</span>
+                      <span>{200}</span>
                       <span className="ml-auto">{maxDistance} km</span>
                     </div>
                   </div>
@@ -547,14 +550,14 @@ const BookingMap = () => {
               <Label className="block mb-1">{t('booking.filterDistance', { defaultValue: 'Distance (km)' })}</Label>
               <Slider
                 min={1}
-                max={20}
+                max={200}
                 step={1}
                 value={[maxDistance] as any}
                 onValueChange={(val: number[]) => setMaxDistance(val[0])}
               />
               <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>{1}</span>
-                <span>{20}</span>
+                <span>{200}</span>
                 <span className="ml-auto">{maxDistance} km</span>
               </div>
             </div>
@@ -695,6 +698,14 @@ const BookingMap = () => {
             })}
           </UserMap>
         </div>
+      )}
+
+      {/* Message when no salons are found within the current search radius.  Show this
+          only when a location is available and the request has completed. */}
+      {!loading && !error && center && allSalons.length === 0 && (
+        <p className="mt-4 text-muted-foreground">
+          {t('booking.noSalonsNearby', { defaultValue: 'No salons found nearby.' })}
+        </p>
       )}
       {/* Fallback when no center is available.  If geolocation is denied, prompt
           the user to manually search for an address.  Otherwise, show a simple

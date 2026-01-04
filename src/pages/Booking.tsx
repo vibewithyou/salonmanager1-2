@@ -386,10 +386,13 @@ const Booking = () => {
           {/* Step 1: Salon Selection */}
           {step === 1 && (
             <div className="space-y-6">
-              {/* Link to the map-based booking page */}
+              {/* Button link to the map-based booking page.  Use a styled button to integrate
+                  better with the rest of the wizard UI. */}
               <div className="flex justify-end">
-                <Link to="/booking-map" className="text-sm underline inline-flex items-center gap-1">
-                  <MapPin className="w-4 h-4" /> {t('booking.mapView', { defaultValue: 'Map' })}
+                <Link to="/booking-map" className="inline-block">
+                  <Button variant="outline" size="sm" className="inline-flex items-center gap-1">
+                    <MapPin className="w-4 h-4" /> {t('booking.mapView', { defaultValue: 'Map' })}
+                  </Button>
                 </Link>
               </div>
               <div className="text-center mb-8">
