@@ -141,7 +141,19 @@ const BookingMap = () => {
     // Convert filter values to parameters for the RPC.  A value of null
     // indicates that the filter should be ignored on the server side.
     const minRatingParam = minRating > 0 ? minRating : null;
-    const [minPriceParam, maxPriceParam] = priceRange;
+    // Determine price filter parameters.  When there is no meaningful price range
+    // (e.g. all salons have the same price or no salons are loaded), skip the
+    // price filter by passing nulls.  Otherwise, use the current selected
+    // range values.  This prevents filtering everything out when priceBounds is [0,0].
+    let [minPriceParam, maxPriceParam] = priceRange;
+    if (
+      priceBounds[0] === priceBounds[1] &&
+      priceRange[0] === priceBounds[0] &&
+      priceRange[1] === priceBounds[1]
+    ) {
+      minPriceParam = null as any;
+      maxPriceParam = null as any;
+    }
     const categoriesParam = selectedCategories.length > 0 ? selectedCategories : null;
     // Compute time window based on timeFrame
     let startIso: string | null = null;
@@ -349,11 +361,18 @@ const BookingMap = () => {
   };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">{t('booking.mapViewTitle', { defaultValue: 'Salon Map' })}</h1>
-      <p className="mb-4 text-muted-foreground">
-        {t('booking.mapViewDescription', { defaultValue: 'This page will show salons near you on an interactive map.' })}
-      </p>
+    // Use the same container and typography as the booking wizard so the map
+    // view blends seamlessly into the rest of the application.  The
+    // `container` class sets responsive max-widths, while `px-4 py-8`
+    // provides consistent padding.  A fade-in animation matches the
+    // transition used on other pages.
+    <main className="container px-4 py-8 max-w-4xl mx-auto animate-fade-in">
+      {/* Page title styled like the wizard step headings */}
+      <h1 className="text-3xl font-display font-bold text-center mb-8">
+        {t('booking.mapViewTitle')}
+      </h1>
+      {/* Remove the default description.  The map view now follows the same look
+          as other pages and does not need an explanatory paragraph. */}
       {/* Show loading/error states */}
       {loading && <p>{t('common.loading')}</p>}
       {!loading && error && <p className="text-destructive">{error}</p>}
@@ -439,10 +458,8 @@ const BookingMap = () => {
                       value={[maxDistance] as any}
                       onValueChange={(val: number[]) => setMaxDistance(val[0])}
                     />
-                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                      <span>{1}</span>
-                      <span>{200}</span>
-                      <span className="ml-auto">{maxDistance} km</span>
+                    <div className="flex justify-end text-xs text-muted-foreground mt-1">
+                      <span>{maxDistance} km</span>
                     </div>
                   </div>
                   {/* Time frame filter */}
@@ -472,7 +489,7 @@ const BookingMap = () => {
                         if (priceBounds[0] !== priceBounds[1]) {
                           setPriceRange([priceBounds[0], priceBounds[1]]);
                         }
-                        setMaxDistance(5);
+                        setMaxDistance(20);
                         setTimeFrame('any');
                       }}
                     >
@@ -481,7 +498,6 @@ const BookingMap = () => {
                     <span className="text-sm">
                       {t('booking.salonsFound', {
                         count: filteredSalons.length,
-                        defaultValue: `${filteredSalons.length} salons found`,
                       })}
                     </span>
                   </div>
@@ -490,7 +506,9 @@ const BookingMap = () => {
             </Drawer>
           </div>
           {/* Desktop filters */}
-          <div className="hidden md:grid mb-4 space-y-4 md:space-y-0 md:grid-cols-2 lg:grid-cols-5 md:gap-4">
+          {/* Use a card with border and rounded corners to match the booking wizard design. */}
+          <div className="hidden md:block bg-card border border-border rounded-2xl p-4 mb-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Rating filter */}
             <div>
               <Label className="block mb-1">{t('booking.filterRating', { defaultValue: 'Minimum rating' })}</Label>
@@ -555,10 +573,8 @@ const BookingMap = () => {
                 value={[maxDistance] as any}
                 onValueChange={(val: number[]) => setMaxDistance(val[0])}
               />
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>{1}</span>
-                <span>{200}</span>
-                <span className="ml-auto">{maxDistance} km</span>
+              <div className="flex justify-end text-xs text-muted-foreground mt-1">
+                <span>{maxDistance} km</span>
               </div>
             </div>
             {/* Time frame filter */}
@@ -577,39 +593,43 @@ const BookingMap = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          {/* Desktop reset and count */}
-          <div className="hidden md:flex justify-end mb-2">
-            <button
-              type="button"
-              className="text-sm text-primary underline"
-              onClick={() => {
-                setMinRating(0);
-                setSelectedCategories([]);
-                if (priceBounds[0] !== priceBounds[1]) {
-                  setPriceRange([priceBounds[0], priceBounds[1]]);
-                }
-                setMaxDistance(5);
-                setTimeFrame('any');
-              }}
-            >
-              {t('booking.resetFilters', { defaultValue: 'Reset filters' })}
-            </button>
-          </div>
-          <div className="hidden md:block mb-4">
-            <span className="text-sm">
-              {t('booking.salonsFound', {
-                count: filteredSalons.length,
-                defaultValue: `${filteredSalons.length} salons found`,
-              })}
-            </span>
+            </div>
+            {/* Reset button and salon count row.  Adding a top border and extra padding visually separates the
+                controls from the filters. */}
+            <div className="flex justify-between items-center border-t border-border pt-4 mt-4">
+              <button
+                type="button"
+                className="text-sm text-primary underline"
+                onClick={() => {
+                  setMinRating(0);
+                  setSelectedCategories([]);
+                  if (priceBounds[0] !== priceBounds[1]) {
+                    setPriceRange([priceBounds[0], priceBounds[1]]);
+                  }
+                  setMaxDistance(20);
+                  setTimeFrame('any');
+                }}
+              >
+                {t('booking.resetFilters', { defaultValue: 'Reset filters' })}
+              </button>
+              <span className="text-sm">
+                {t('booking.salonsFound', {
+                  count: filteredSalons.length,
+                })}
+              </span>
+            </div>
           </div>
         </>
       )}
       {/* Render map when we have a user location */}
       {!loading && !error && center && (
-        <div className="w-full rounded-lg overflow-hidden h-[70vh] md:h-[60vh]">
-          <UserMap center={center} userLabel={t('booking.youAreHere', { defaultValue: 'You are here' })}>
+        // Wrap the map in a card with border and background to match other UI elements.
+        <div className="w-full rounded-lg overflow-hidden border border-border bg-card h-[70vh] md:h-[60vh] mt-6">
+          <UserMap
+            center={center}
+            userLabel={t('booking.youAreHere', { defaultValue: 'You are here' })}
+            userColor="#2563eb"
+          >
             {/* Render clusters and individual salon markers. For each cluster, if it contains only
                 one salon we render a regular marker. Otherwise we create a marker with a
                 custom divIcon showing the number of salons in the cluster and a popup
@@ -618,11 +638,15 @@ const BookingMap = () => {
               if (cluster.count === 1) {
                 const salon = cluster.members[0];
                 const isActive = filteredSalonIds.has(salon.id);
+                // Use custom circle icons for salons.  Active salons are gold, inactive are gray.
+                const circleColor = isActive ? '#FBBF24' /* amber-400 */ : '#D1D5DB' /* gray-300 */;
+                const html = `<span style="background-color:${circleColor};width:16px;height:16px;display:block;border-radius:50%;border:2px solid white;"></span>`;
+                const salonIcon = L.divIcon({ html, className: '' });
                 return (
                   <Marker
                     key={`salon-${salon.id}`}
                     position={[salon.latitude, salon.longitude] as any}
-                    opacity={isActive ? 1 : 0.3}
+                    icon={salonIcon as any}
                   >
                     <Popup>
                       <div className="space-y-1">
@@ -661,7 +685,8 @@ const BookingMap = () => {
               }
               // For clusters with more than one salon, create a custom divIcon.
               const sizePx = 32;
-              const bgColor = cluster.active ? '#2563eb' /* primary color (blue-600) */ : '#a1a1aa' /* gray-400 */;
+              // Use gold for clusters containing at least one active salon, gray for inactive clusters
+              const bgColor = cluster.active ? '#FBBF24' /* amber-400 */ : '#a1a1aa' /* gray-400 */;
               const html = `<div style="background-color:${bgColor};width:${sizePx}px;height:${sizePx}px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:14px;color:white;">${cluster.count}</div>`;
               const clusterIcon = L.divIcon({ html, className: '' });
               return (
@@ -738,7 +763,7 @@ const BookingMap = () => {
       {!loading && !error && !center && !geoDenied && (
         <p>{t('booking.noSalonsNearby', { defaultValue: 'No salons found nearby.' })}</p>
       )}
-    </div>
+    </main>
   );
 };
 

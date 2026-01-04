@@ -1,4 +1,4 @@
-import { PropsWithChildren, useEffect } from 'react';
+import { PropsWithChildren, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -35,6 +35,10 @@ export interface UserMapProps {
   zoom?: number;
   /** Optional label for the user's location marker. */
   userLabel?: string;
+  /** Optional CSS color for the user's marker. If provided, a small circular
+   * icon of this color will be used instead of the default Leaflet marker.
+   */
+  userColor?: string;
 }
 
 /**
@@ -50,9 +54,18 @@ const UserMap = ({
   scroll = true,
   zoom = 13,
   userLabel,
+  userColor,
 }: PropsWithChildren<UserMapProps>) => {
   // Early return if the center is not yet available.
   if (!center) return null;
+
+  // Create a simple circular icon for the user's location if a color is provided.
+  const userIcon = useMemo(() => {
+    if (!userColor) return undefined;
+    const size = 16;
+    const html = `<span style="background-color:${userColor};width:${size}px;height:${size}px;display:block;border-radius:50%;border:2px solid white;"></span>`;
+    return L.divIcon({ html, className: '' });
+  }, [userColor]);
   return (
     <MapContainer
       center={center as any}
@@ -65,7 +78,7 @@ const UserMap = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {/* User location marker */}
-      <Marker position={center as any}>
+      <Marker position={center as any} icon={userIcon as any}>
         {userLabel ? <Popup>{userLabel}</Popup> : null}
       </Marker>
       {children}
