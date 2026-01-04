@@ -12,8 +12,12 @@ import { Marker, Popup } from 'react-leaflet';
 // Import Leaflet core to build custom cluster icons
 import L from 'leaflet';
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { ThemeSwitcher } from '@/components/ThemeSwitcher';
+import { Scissors, ArrowLeft } from 'lucide-react';
 // Import UI components for the filter bar
 import {
   Select,
@@ -46,6 +50,7 @@ import {
  */
 const BookingMap = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   // All salons within the selected radius, regardless of rating/price/category filters.
   const [allSalons, setAllSalons] = useState<Array<any>>([]);
   // Salons that match the currently selected filters.  This list will be a subset of allSalons.
@@ -361,16 +366,28 @@ const BookingMap = () => {
   };
 
   return (
-    // Use the same container and typography as the booking wizard so the map
-    // view blends seamlessly into the rest of the application.  The
-    // `container` class sets responsive max-widths, while `px-4 py-8`
-    // provides consistent padding.  A fade-in animation matches the
-    // transition used on other pages.
-    <main className="container px-4 py-8 max-w-4xl mx-auto animate-fade-in">
-      {/* Page title styled like the wizard step headings */}
-      <h1 className="text-3xl font-display font-bold text-center mb-8">
-        {t('booking.mapViewTitle')}
-      </h1>
+    <div className="min-h-screen bg-background">
+      {/* Header with logo and controls matching the booking wizard */}
+      <header className="glass border-b border-border sticky top-0 z-50">
+        <div className="container px-4 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
+              <Scissors className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="text-xl font-display font-bold text-foreground">
+              Salon<span className="text-primary">Manager</span>
+            </span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <ThemeSwitcher />
+          </div>
+        </div>
+      </header>
+      <main className="container px-4 py-8 max-w-4xl mx-auto animate-fade-in">
+        <h1 className="text-3xl font-display font-bold text-center mb-8">
+          {t('booking.mapViewTitle')}
+        </h1>
       {/* Remove the default description.  The map view now follows the same look
           as other pages and does not need an explanatory paragraph. */}
       {/* Show loading/error states */}
@@ -763,7 +780,16 @@ const BookingMap = () => {
       {!loading && !error && !center && !geoDenied && (
         <p>{t('booking.noSalonsNearby', { defaultValue: 'No salons found nearby.' })}</p>
       )}
+
+      {/* Back button to return to the previous page (booking list) */}
+      <div className="mt-8 flex">
+        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          {t('common.back', { defaultValue: 'Back' })}
+        </Button>
+      </div>
     </main>
+    </div>
   );
 };
 
